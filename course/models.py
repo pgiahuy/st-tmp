@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean,Enum as SQLEnum, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from enum import Enum
@@ -23,7 +23,7 @@ class User(Base):
 
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(255), nullable=False)
-    role = Column(Integer, default=UserRole.USER)
+    role = Column(SQLEnum(UserRole), default=UserRole.USER)
 
     student = relationship("Student", backref="user", uselist=False)
 

@@ -1,0 +1,19 @@
+{
+  "students": [
+    {
+      "mssv": "2351050061",
+      "full_name": "Phan Gia Huy",
+      "email": "huy@example.com"
+    },
+    {
+      "mssv": "2351050130",
+      "full_name": "Nguyễn Lý Mị Nương",
+      "email": "nuong@example.com"
+    },
+    {
+      "mssv": "2351054099",
+      "full_name": "Trịnh Phú Xuân",
+      "email": "xuan@example.com"
+    }
+  ]
+}
