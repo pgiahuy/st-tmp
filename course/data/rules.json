@@ -1,0 +1,8 @@
+{
+  "rules": [
+    { "key": "MAX_CREDITS", "value": "25" },
+    { "key": "MIN_CREDITS", "value": "12" },
+    { "key": "MAX_STUDENTS_PER_CLASS", "value": "50" },
+    { "key": "CANCEL_DEADLINE_DAYS", "value": "14" }
+  ]
+}

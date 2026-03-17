@@ -1,0 +1,6 @@
+{
+  "prerequisites": [
+    { "course_id": 2, "prerequisite_id": 1 },
+    { "course_id": 3, "prerequisite_id": 2 }
+  ]
+}

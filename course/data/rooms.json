@@ -1,0 +1,16 @@
+{
+  "rooms": [
+    { "name": "B101", "capacity": 50 },
+    { "name": "B202", "capacity": 50 },
+    { "name": "B203", "capacity": 50 },
+    { "name": "B204", "capacity": 50 },
+    { "name": "C302", "capacity": 50 },
+    { "name": "C303", "capacity": 50 },
+    { "name": "C304", "capacity": 50 },
+    { "name": "C305", "capacity": 50 },
+    { "name": "D201", "capacity": 50 },
+    { "name": "D202", "capacity": 50 },
+    { "name": "D203", "capacity": 50 },
+    { "name": "D204", "capacity": 50 }
+  ]
+}
