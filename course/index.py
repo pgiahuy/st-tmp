@@ -19,7 +19,9 @@ def login_my_user():
             return redirect("/")
         else:
             err_msg = "Mã số sinh viên hoặc mật khẩu không đúng!"
+
     return render_template('login.html', err_msg=err_msg)
+
 
 @login.user_loader
 def load_user(id):
