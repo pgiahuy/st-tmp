@@ -1,0 +1,1 @@
+from course.models import Course
