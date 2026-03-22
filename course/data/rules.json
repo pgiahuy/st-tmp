@@ -1,0 +1,24 @@
+{
+  "rules": [
+    {
+      "name": "Số tín chỉ tối đa",
+      "key": "MAX_CREDITS",
+      "value": "25"
+    },
+    {
+      "name": "Số tín chỉ tối thiểu",
+      "key": "MIN_CREDITS",
+      "value": "12"
+    },
+    {
+      "name": "Số sinh viên tối đa mỗi lớp",
+      "key": "MAX_STUDENTS_PER_CLASS",
+      "value": "50"
+    },
+    {
+      "name": "Hạn hủy đăng ký (ngày)",
+      "key": "CANCEL_DEADLINE_DAYS",
+      "value": "14"
+    }
+  ]
+}
