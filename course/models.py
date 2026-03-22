@@ -1,3 +1,4 @@
+from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean,Enum as SQLEnum, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -18,7 +19,7 @@ class Base(db.Model):
         return getattr(self, "name", str(self.id))
 
 
-class User(Base):
+class User(Base, UserMixin):
     __tablename__ = "users"
 
     username = Column(String(50), unique=True, nullable=False)
@@ -26,6 +27,10 @@ class User(Base):
     role = Column(SQLEnum(UserRole), default=UserRole.USER)
 
     student = relationship("Student", backref="user", uselist=False)
+
+    @property
+    def is_active(self):
+        return self.active
 
 
 class Student(Base):
@@ -109,6 +114,7 @@ class Rule(Base):
     __tablename__ = "rules"
 
     key = Column(String(50), unique=True, nullable=False)
+    name = Column(String(50), nullable=False)
     value = Column(String(50), nullable=False)
     description = Column(String(255))
 

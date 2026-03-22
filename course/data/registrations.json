@@ -1,0 +1,11 @@
+{
+  "registrations": [
+    {
+      "id": 1,
+      "student_id": 1,
+      "class_id": 101,
+      "semester_id": 1,
+      "registered_at": "2025-09-05T10:00:00"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "semesters": [
+    {
+      "name": "HK1",
+      "year": 2025,
+      "start_date": "2025-02-01",
+      "registration_deadline": "2025-01-20"
+    },
+    {
+      "name": "HK2",
+      "year": 2025,
+      "start_date": "2025-06-01",
+      "registration_deadline": "2025-05-20"
+    },
+    {
+      "name": "HK3",
+      "year": 2025,
+      "start_date": "2025-10-01",
+      "registration_deadline": "2025-09-20"
+    }
+  ]
+}

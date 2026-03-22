@@ -1,0 +1,134 @@
+{% extends 'admin/base.html' %}
+{% import 'admin/layout.html' as layout with context %}
+{% import 'admin/static.html' as admin_static with context %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+
+    <title>
+        {% if admin_view.category %}{{ admin_view.category }} - {% endif %}
+        {{ admin_view.name }} - {{ admin_view.admin.name }}
+    </title>
+
+    {% block head_meta %}
+
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% endblock %}
+
+    {% block head_css %}
+    <link href="{{ admin_static.url(
+        filename='bootstrap/bootstrap4/css/font-awesome.min.css', v='4.7.0') }}" rel="stylesheet">
+
+    <link href="{{ admin_static.url(
+    filename='bootstrap/bootstrap4/swatch/{swatch}/bootstrap.min.css'.format(swatch=theme.swatch), v='4.2.1') }}"
+          rel="stylesheet">
+
+    {% if theme.swatch == 'default' %}
+    <link href="{{ admin_static.url(
+        filename='bootstrap/bootstrap4/css/bootstrap.min.css', v='4.2.1') }}" rel="stylesheet">
+    {% endif %}
+
+    <link href="{{ admin_static.url(filename='admin/css/bootstrap4/admin.css', v='1.1.1') }}" rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/admin.css') }}">
+    {% endblock %}
+
+    {% block head %}{% endblock %}
+</head>
+
+
+<body>
+
+
+
+{% block page_body %}
+<div class="wrapper">
+
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <a href="{{ admin_view.admin.url }}">
+                {{ admin_view.admin.name }}
+            </a>
+        </div>
+
+        {% set current_path = request.path.rstrip('/') %}
+        <ul class="list-unstyled components">
+            {% for item in admin_view.admin.menu() %}
+            {% if item.is_visible() %}
+            {% set item_url = item.get_url().rstrip('/') %}
+
+            {% if item_url == '/admin' %}
+            {% set active = (current_path == '/admin') %}
+            {% else %}
+            {% set active = current_path.startswith(item_url) %}
+            {% endif %}
+
+            <li class="{{ 'active' if active else '' }}">
+                <a class="nav-link" href="{{ item_url }}/">
+                    <span>{{ item.name }}</span>
+                </a>
+            </li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+    </nav>
+
+    <div id="content">
+
+        <nav class="navbar navbar-expand-lg navbar-light top-navbar mb-4">
+            <button id="sidebarCollapse" class="btn mr-3">☰</button>
+            <ul class="navbar-nav">
+                <li class="nav-item active">
+                    <a class="nav-link font-weight-bold" href="#">
+                        {{ admin_view.name }}
+                    </a>
+                </li>
+            </ul>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto admin-user-area">
+                    {{ layout.menu_links() }}
+
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                           <a class="nav-link">
+                                {{ current_user.username }}
+                            </a>
+                        </li>
+                        <li class="nav-item admin-logout">
+                            <a class="nav-link"
+                               href="{{ url_for('logout_my_user') }}">
+                                <i class="fa fa-sign-out"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+
+            </div>
+        </nav>
+
+        {{ layout.messages() }}
+
+        {% set render_ctx = h.resolve_ctx() %}
+        {% block body %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block tail_js %}
+{{ super() }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $('#sidebarCollapse').on('click', function () {
+        $('#sidebar').toggleClass('active');
+        $('body').toggleClass('sidebar-collapsed');
+    });
+</script>
+{% endblock %}
+</body>
+</html>
