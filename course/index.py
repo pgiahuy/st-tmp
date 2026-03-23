@@ -1,9 +1,8 @@
-from flask import render_template, request
+from flask import render_template, request, session
 from werkzeug.utils import redirect
 
 from course import app, dao, login
 from flask_login import logout_user,login_user
-
 from course.models import UserRole
 
 
@@ -17,7 +16,7 @@ def admin_login():
         username = request.form.get('username')
         password = request.form.get('password')
 
-        user = dao.auth_user(username=username, password=password)
+        user = dao.auth_user(username=username, password=password ,session=session)
 
         if user and user.role == UserRole.ADMIN:
             login_user(user)
@@ -33,7 +32,7 @@ def login_my_user():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        user = dao.auth_user(username, password)
+        user = dao.auth_user(username, password, session=session)
         if user:
             login_user(user)
             return redirect("/")
@@ -46,6 +45,23 @@ def login_my_user():
 def logout_my_user():
     logout_user()
     return redirect('/login')
+
+from flask import session, jsonify
+
+@app.route('/userinfo')
+def my_profile():
+    user_id = session.get('user_id')
+    print(user_id)
+    # if not user_id:
+    #     return jsonify({"error": "Chưa đăng nhập"}), 401
+    #
+    # user = User.query.get(user_id)
+    #
+    # return jsonify({
+    #     "id": user.id,
+    #     "username": user.username
+    # })
+
 
 @login.user_loader
 def load_user(id):
