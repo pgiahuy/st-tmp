@@ -59,3 +59,18 @@ with open('data/students.json', encoding='utf-8') as f:
 #         )
 #         db.session.add(admin)
 #         db.session.commit()
+
+# Tạo tạm tk user
+# from course.models import User, UserRole
+#
+# with app.app_context():
+#     admin = User.query.filter_by(username="user").first()
+#
+#     if not admin:
+#         admin = User(
+#             username="user",
+#             password=dao.hash_password("123"),
+#             role=UserRole.USER
+#         )
+#         db.session.add(admin)
+#         db.session.commit()
