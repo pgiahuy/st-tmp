@@ -12,6 +12,9 @@ def hash_password(password):
 def get_user_by_id(id):
     return User.query.get(id)
 
+def get_student_by_id(id):
+    return Student.query.get(id)
+
 def auth_user(username, password, session):
     if not username or username is None:
         raise Exception("Vui lòng nhập tên đăng nhập!")
@@ -19,7 +22,7 @@ def auth_user(username, password, session):
         raise Exception("Vui lòng nhập mật khẩu!")
 
     password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
-    return db.session.query(User).filter_by(username=username, password=password).first()
+    return session.query(User).filter_by(username=username, password=password).first()
 
 def add_user_student(student_id = None, password = None):
 
