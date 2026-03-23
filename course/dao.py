@@ -12,14 +12,14 @@ def hash_password(password):
 def get_user_by_id(id):
     return User.query.get(id)
 
-def auth_user(username, password,session):
+def auth_user(username, password, session):
     if not username or username is None:
         raise Exception("Vui lòng nhập tên đăng nhập!")
     if not password or password is None:
         raise Exception("Vui lòng nhập mật khẩu!")
 
     password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
-    return session.query(User).filter_by(username=username, password=password).first()
+    return db.session.query(User).filter_by(username=username, password=password).first()
 
 
 
