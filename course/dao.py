@@ -21,6 +21,9 @@ def auth_user(username, password,session):
     password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
     return session.query(User).filter_by(username=username, password=password).first()
 
+
+
+
 def add_user_student(student_id = None, password = None):
 
     student = db.session.query(Student).filter_by(id=student_id).first()

@@ -37,6 +37,8 @@ class UserAdmin(AdminAccessMixin, ModelView):
         if is_created:
             model.password = dao.hash_password(model.password)
 
+
+
 class StudentAdmin(AdminAccessMixin, ModelView):
 
     form_excluded_columns = ['registrations','created_date','user','active']
