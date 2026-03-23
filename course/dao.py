@@ -72,3 +72,18 @@ def add_system_config(key, value,name,description=None):
     except IntegrityError:
         db.session.rollback()
 
+def change_password(user_id, old_password, new_password):
+    user = get_user_by_id(user_id)
+
+    if not user:
+        return {"error": "User không tồn tại"}
+    print(user)
+    # check mật khẩu cũ
+    if user.password != hash_password(old_password):
+        return {"error": "Mật khẩu cũ không đúng"}
+
+    # update mật khẩu mới
+    user.password = hash_password(new_password)
+    db.session.commit()
+
+    return {"success": True}

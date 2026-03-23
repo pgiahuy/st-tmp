@@ -45,3 +45,32 @@ with open('data/students.json', encoding='utf-8') as f:
                 email=s["email"]
             )
         db.session.commit()
+# Tạo tạm tk admin
+# from course.models import User, UserRole
+#
+# with app.app_context():
+#     admin = User.query.filter_by(username="admin").first()
+#
+#     if not admin:
+#         admin = User(
+#             username="admin",
+#             password=dao.hash_password("123456"),
+#             role=UserRole.ADMIN
+#         )
+#         db.session.add(admin)
+#         db.session.commit()
+
+# Tạo tạm tk user
+# from course.models import User, UserRole
+#
+# with app.app_context():
+#     admin = User.query.filter_by(username="user").first()
+#
+#     if not admin:
+#         admin = User(
+#             username="user",
+#             password=dao.hash_password("123"),
+#             role=UserRole.USER
+#         )
+#         db.session.add(admin)
+#         db.session.commit()

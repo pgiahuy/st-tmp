@@ -25,7 +25,6 @@ def test_login_empty_username(test_session):
         auth_user("", "admin", test_session)
 
 
-
 def test_login_empty_password(test_session, sample_user):
     with pytest.raises(Exception):
         auth_user("admin", "", test_session)
