@@ -12,6 +12,9 @@ def hash_password(password):
 def get_user_by_id(id):
     return User.query.get(id)
 
+def get_student_by_id(id):
+    return Student.query.get(id)
+
 def auth_user(username, password, session):
     if not username or username is None:
         raise Exception("Vui lòng nhập tên đăng nhập!")
@@ -20,9 +23,6 @@ def auth_user(username, password, session):
 
     password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
     return session.query(User).filter_by(username=username, password=password).first()
-
-
-
 
 def add_user_student(student_id = None, password = None):
 
@@ -77,7 +77,7 @@ def change_password(user_id, old_password, new_password):
 
     if not user:
         return {"error": "User không tồn tại"}
-
+    print(user)
     # check mật khẩu cũ
     if user.password != hash_password(old_password):
         return {"error": "Mật khẩu cũ không đúng"}

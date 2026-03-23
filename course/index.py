@@ -46,12 +46,12 @@ def logout_my_user():
     logout_user()
     return redirect('/login')
 
-from flask import session, jsonify
 
 @app.route('/userinfo')
 def my_profile():
-    user_id = session.get('user_id')
-    print(user_id)
+    student = dao.get_student_by_id(current_user.student)
+
+    return render_template('profile.html', student=student)
     # if not user_id:
     #     return jsonify({"error": "Chưa đăng nhập"}), 401
     #
@@ -61,6 +61,7 @@ def my_profile():
     #     "id": user.id,
     #     "username": user.username
     # })
+
 
 @login.user_loader
 def load_user(id):
