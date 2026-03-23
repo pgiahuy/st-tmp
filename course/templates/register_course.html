@@ -1,0 +1,52 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Đăng ký môn học{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h3 class="mb-3">ĐĂNG KÝ MÔN HỌC</h3>
+
+    <!-- Thông báo -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, msg in messages %}
+                <div class="alert alert-{{ category }}">{{ msg }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <table class="table table-bordered table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Mã lớp</th>
+                <th>Môn học</th>
+                <th>Tín chỉ</th>
+                <th>Lịch học</th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for c in classes %}
+            <tr>
+                <td>{{ c.class_code }}</td>
+                <td>{{ c.course.course_name }}</td>
+                <td>{{ c.course.credits }}</td>
+                <td>{{ c.schedule }}</td>
+                <td>
+                    <form method="post">
+                        <input type="hidden" name="class_id" value="{{ c.id }}">
+                        <button class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-circle"></i> Đăng ký
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

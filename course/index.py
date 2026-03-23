@@ -2,7 +2,8 @@ from flask import render_template, request, session
 from werkzeug.utils import redirect
 
 from course import app, dao, login, db
-from flask_login import logout_user,login_user, login_required, current_user
+
+from flask_login import logout_user, login_user, current_user, login_required, login_required
 from course.models import UserRole
 
 
@@ -52,15 +53,7 @@ def my_profile():
     student = dao.get_student_by_id(current_user.student)
 
     return render_template('profile.html', student=student)
-    # if not user_id:
-    #     return jsonify({"error": "Chưa đăng nhập"}), 401
-    #
-    # user = User.query.get(user_id)
-    #
-    # return jsonify({
-    #     "id": user.id,
-    #     "username": user.username
-    # })
+    
 
 
 @login.user_loader
@@ -98,6 +91,12 @@ def change_password():
         err_msg=err_msg,
         success_msg=success_msg
     )
+  
+@app.route('/register-course', methods=['GET', 'POST'])
+@login_required
+def register_course():
+    return render_template('register_course.html')
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

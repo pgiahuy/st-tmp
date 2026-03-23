@@ -5,7 +5,7 @@ from flask_login import current_user
 from werkzeug.utils import redirect
 
 from course import app, db, dao
-from course.models import UserRole, Course, Student, User, Class, Room, Rule
+from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig
 
 
 class AdminAccessMixin:
@@ -91,7 +91,7 @@ admin = Admin(app,name='Admin',index_view=MyAdminHome(name='TRANG CHỦ'))
 admin.add_view(CourseAdmin(Course, db.session,name='MÔN HỌC'))
 admin.add_view(StudentAdmin(Student, db.session,name='SINH VIÊN'))
 admin.add_view(UserAdmin(User, db.session,name='TÀI KHOẢN'))
-admin.add_view(ClassAdmin(Class, db.session,name='LỚP'))
+admin.add_view(ClassAdmin(CourseClass, db.session,name='LỚP'))
 admin.add_view(RoomAdmin(Room, db.session,name='PHÒNG HỌC'))
-admin.add_view(RuleAdmin(Rule, db.session,name='QUY ĐỊNH'))
+admin.add_view(RuleAdmin(SystemConfig, db.session,name='QUY ĐỊNH'))
 
