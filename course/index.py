@@ -78,7 +78,7 @@ def change_password():
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
 
-        # check confirm password
+        # check xác nhận mật khẩu
         if new_password != confirm_password:
             err_msg = "Mật khẩu xác nhận không khớp!"
         else:
