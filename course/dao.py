@@ -3,7 +3,7 @@ import hashlib
 from sqlalchemy.exc import IntegrityError
 
 from course import db, app
-from course.models import User, Student, Course, Room, Rule
+from course.models import User, Student, Course, Room, SystemConfig
 
 
 def hash_password(password):
@@ -64,8 +64,8 @@ def add_room(name, capacity):
         db.session.rollback()
 
 
-def add_rule(key, value,name,description=None):
-    rule = Rule(key=key, value=value,name=name, description=description)
+def add_system_config(key, value,name,description=None):
+    rule = SystemConfig(key=key, value=value,name=name, description=description)
     db.session.add(rule)
     try:
         db.session.commit()
