@@ -23,7 +23,7 @@ with open('data/rules.json', encoding='utf-8') as f:
     with app.app_context():
         data = json.load(f)
         for r in data["rules"]:
-            dao.add_rule(key=r["key"], value=r["value"], name=r["name"])
+            dao.add_system_config(key=r["key"], value=r["value"], name=r["name"])
         db.session.commit()
 
 with open('data/courses.json', encoding='utf-8') as f:

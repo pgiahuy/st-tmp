@@ -51,7 +51,7 @@ class Course(Base):
     course_name = Column(String(100), nullable=False)
     credits = Column(Integer, nullable=False)
 
-    classes = relationship("Class", backref="course")
+    classes = relationship("CourseClass", backref="course")
 
     prerequisites = relationship(
         "Course",
@@ -61,8 +61,8 @@ class Course(Base):
         backref="required_for"
     )
 
-class Class(Base):
-    __tablename__ = "classes"
+class CourseClass(Base):
+    __tablename__ = "course_classes"
 
     class_code = Column(String(20), unique=True)
     course_id = Column(Integer, ForeignKey("courses.id"))
@@ -71,7 +71,7 @@ class Class(Base):
     room_id = Column(Integer, ForeignKey("rooms.id"))
     room = db.relationship("Room", backref="classes")
     max_students = Column(Integer)
-    registrations = db.relationship("Registration", backref="clazz")
+    registrations = db.relationship("Registration", backref="course_class")
 
 class Room(Base):
     __tablename__ = "rooms"
@@ -94,13 +94,13 @@ class Registration(Base):
     __tablename__ = "registrations"
 
     student_id = Column(Integer, ForeignKey("students.id"))
-    class_id = Column(Integer, ForeignKey("classes.id"))
+    course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     semester_id = Column(Integer, ForeignKey("semesters.id"))
 
     registered_at = Column(DateTime, default=datetime.now())
 
     __table_args__ = (
-        db.UniqueConstraint('student_id', 'class_id', name='unique_registration'),
+        db.UniqueConstraint('student_id', 'course_class_id', name='unique_registration'),
     )
 
 
@@ -110,8 +110,8 @@ class CoursePrerequisite(Base):
     course_id = Column(Integer, ForeignKey("courses.id"))
     prerequisite_id = Column(Integer, ForeignKey("courses.id"))
 
-class Rule(Base):
-    __tablename__ = "rules"
+class SystemConfig(Base):
+    __tablename__ = "system_configs"
 
     key = Column(String(50), unique=True, nullable=False)
     name = Column(String(50), nullable=False)

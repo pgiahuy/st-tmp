@@ -2,7 +2,7 @@ from flask import render_template, request, session
 from werkzeug.utils import redirect
 
 from course import app, dao, login, db
-from flask_login import logout_user,login_user, current_user
+from flask_login import logout_user, login_user, current_user, login_required
 from course.models import UserRole
 
 
@@ -66,6 +66,12 @@ def my_profile():
 @login.user_loader
 def load_user(id):
     return dao.get_user_by_id(id)
+
+
+@app.route('/register-course', methods=['GET', 'POST'])
+@login_required
+def register_course():
+    return render_template('register_course.html')
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
