@@ -3,7 +3,7 @@ import hashlib
 from sqlalchemy.exc import IntegrityError
 
 from course import db, app
-from course.models import User, Student, Course, Room, SystemConfig
+from course.models import User, Student, Course, Room, SystemConfig, CourseClass, UserRole
 
 
 def hash_password(password):
@@ -14,6 +14,14 @@ def get_user_by_id(id):
 
 def get_student_by_id(id):
     return Student.query.get(id)
+
+def get_courses():
+    return Course.query.order_by(Course.course_name).all()
+def get_course_classes(course_id=None):
+    query = CourseClass.query
+    if course_id:
+        query = query.filter_by(course_id=course_id)
+    return query.all()
 
 def auth_user(username, password, session):
     if not username or username is None:
@@ -36,7 +44,6 @@ def add_user_student(student_id = None, password = None):
     user = User(username=student.mssv, password=hash_password(password), student=student)
     db.session.add(user)
     return user
-
 
 def add_student(mssv,full_name, email):
     student = Student(mssv=mssv, full_name=full_name, email=email)
@@ -63,7 +70,22 @@ def add_room(name, capacity):
     except IntegrityError:
         db.session.rollback()
 
-
+from course.models import CourseClass
+def add_course_class(id, class_code, course_id, schedule, room_id, max_students):
+    c_class = CourseClass(
+        id=id,
+        class_code=class_code,
+        course_id=course_id,
+        schedule=schedule,
+        room_id=room_id,
+        max_students=max_students
+    )
+    db.session.add(c_class)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        print(f"Lớp {class_code} đã tồn tại hoặc lỗi khóa ngoại!")
 def add_system_config(key, value,name,description=None):
     rule = SystemConfig(key=key, value=value,name=name, description=description)
     db.session.add(rule)
@@ -78,11 +100,10 @@ def change_password(user_id, old_password, new_password):
     if not user:
         return {"error": "User không tồn tại"}
     print(user)
-    # check mật khẩu cũ
+
     if user.password != hash_password(old_password):
         return {"error": "Mật khẩu cũ không đúng"}
 
-    # update mật khẩu mới
     user.password = hash_password(new_password)
     db.session.commit()
 

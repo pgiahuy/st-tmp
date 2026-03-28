@@ -1,52 +1,97 @@
 {% extends 'layout/base.html' %}
-
 {% block title %}Đăng ký môn học{% endblock %}
 
 {% block content %}
 
-<div class="container mt-4">
-    <h3 class="mb-3">ĐĂNG KÝ MÔN HỌC</h3>
+<h3 class="mb-4 fw-bold mt-3">ĐĂNG KÝ MÔN HỌC</h3>
 
-    <!-- Thông báo -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, msg in messages %}
-                <div class="alert alert-{{ category }}">{{ msg }}</div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+<div class="card shadow-sm p-3 mb-4">
+    <form method="get" class="row g-3 align-items-center">
 
-    <table class="table table-bordered table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Mã lớp</th>
-                <th>Môn học</th>
-                <th>Tín chỉ</th>
-                <th>Lịch học</th>
-                <th></th>
-            </tr>
-        </thead>
+        <div class="col-md-4">
+            <label class="form-label fw-semibold">Lọc theo</label>
+            <select name="filter_type" id="filterType" class="form-select">
+                <option value="">-- Chọn --</option>
 
-        <tbody>
-            {% for c in classes %}
-            <tr>
-                <td>{{ c.class_code }}</td>
-                <td>{{ c.course.course_name }}</td>
-                <td>{{ c.course.credits }}</td>
-                <td>{{ c.schedule }}</td>
-                <td>
-                    <form method="post">
-                        <input type="hidden" name="class_id" value="{{ c.id }}">
-                        <button class="btn btn-success btn-sm">
-                            <i class="bi bi-plus-circle"></i> Đăng ký
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+                <option value="course"
+                        {% if selected_filter_type=='course' %}selected{% endif %}>
+                    Môn học
+                </option>
 
+                <option value="class"
+                        {% if selected_filter_type=='class' %}selected{% endif %}>
+                    Lớp sinh viên
+                </option>
+            </select>
+        </div>
+
+        <div class="col-md-4 {% if selected_filter_type != 'course' %}d-none{% endif %}" id="courseBox">
+            <label class="form-label fw-semibold">Chọn môn</label>
+
+            <select name="course_id" id="courseSelect" class="form-select">
+                <option value="">-- Chọn môn --</option>
+                {% for course in courses %}
+                <option value="{{ course.id }}"
+                        {% if selected_course_id== course.id|string %}selected{% endif %}>
+                    {{ course.course_code }} - {{ course.course_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+
+        <div class="col-md-4 {% if selected_filter_type != 'class' %}d-none{% endif %}" id="classBox">
+            <label class="form-label fw-semibold">Chọn lớp</label>
+            <select name="class_id" class="form-select">
+                <option>-- Chọn lớp --</option>
+                {% for cl in student_classes %}
+                <option value="{{ cl.id }}">{{ cl.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-12">
+            <button class="btn btn-primary">
+                <i class="bi bi-funnel"></i> Lọc
+            </button>
+
+            <a href="/register-course" class="btn btn-outline-secondary">
+                Reset
+            </a>
+        </div>
+
+    </form>
 </div>
+
+
+<table class="table table-bordered table-hover shadow-sm">
+    <thead class="table-dark">
+    <tr>
+        <th>Mã lớp</th>
+        <th>Môn học</th>
+        <th>Tín chỉ</th>
+        <th>Lịch học</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for c in classes %}
+    <tr>
+        <td>{{ c.class_code }}</td>
+        <td>{{ c.course.course_name }}</td>
+        <td>{{ c.course.credits }}</td>
+        <td>{{ c.schedule }}</td>
+        <td>
+            <form method="post">
+                <input type="hidden" name="class_id" value="{{ c.id }}">
+                <button class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-circle"></i> Đăng ký
+                </button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
 
 {% endblock %}
