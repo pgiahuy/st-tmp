@@ -71,7 +71,6 @@ def change_password():
         new_password = request.form.get('new_password')
         confirm_password = request.form.get('confirm_password')
 
-        # check confirm password
         if new_password != confirm_password:
             err_msg = "Mật khẩu xác nhận không khớp!"
         else:
@@ -95,7 +94,20 @@ def change_password():
 @app.route('/register-course', methods=['GET', 'POST'])
 @login_required
 def register_course():
-    return render_template('register_course.html')
+    courses = dao.get_courses()
+
+    course_id = request.args.get('course_id')
+
+    selected_course_id = course_id
+    selected_filter_type = request.args.get('filter_type', '')
+
+    classes = dao.get_course_classes(course_id=course_id)
+
+    return render_template('register_course.html',
+                           courses=courses,
+                           classes=classes,
+                           selected_course_id = selected_course_id,
+                           selected_filter_type = selected_filter_type)
 
 
 if __name__ == "__main__":
