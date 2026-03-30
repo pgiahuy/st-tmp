@@ -63,6 +63,13 @@ def add_room(name, capacity):
     except IntegrityError:
         db.session.rollback()
 
+def add_user(username, password):
+    user = User(username=username, password=hash_password(password))
+    db.session.add(user)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
 
 def add_system_config(key, value,name,description=None):
     rule = SystemConfig(key=key, value=value,name=name, description=description)
