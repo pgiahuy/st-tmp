@@ -1,0 +1,65 @@
+{% extends 'layout/base.html' %}
+
+{% block title %}Hồ sơ cá nhân{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow p-3">
+        <h3 class="text-center mb-4">HỒ SƠ CÁ NHÂN</h3>
+
+        <div class="row">
+
+            <div class="col-md-6 border-end">
+                <h5>Thông tin sinh viên</h5>
+                <p><strong>Họ tên:</strong>
+                    {{ current_user.student.full_name if current_user.student else "Chưa cập nhật" }}
+                </p>
+                <p><strong>MSSV:</strong>
+                    {{ current_user.student.mssv if current_user.student else "Chưa cập nhật" }}
+                </p>
+                <p><strong>Email:</strong>
+                    {{ current_user.student.email if current_user.student else "Chưa cập nhật" }}
+                </p>
+
+                <hr>
+
+                <a href="/change-password" class="btn btn-warning w-30 mb-3">
+                    <i class="bi bi-lock-fill me-2"></i>Đổi mật khẩu
+                </a>
+            </div>
+
+            <div class="col-md-6">
+                <h5>Lớp đăng ký</h5>
+
+                {% if current_user.student and current_user.student.registrations %}
+                <table class="table table-sm table-striped">
+                    <thead>
+                    <tr>
+                        <th>Học kỳ</th>
+                        <th>Mã lớp</th>
+                        <th>Môn học</th>
+                        <th>Credits</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for reg in current_user.student.registrations %}
+                    <tr>
+                        <td>{{ reg.semester.name if reg.semester else "N/A" }}</td>
+                        <td>{{ reg.clazz.class_code if reg.clazz else "N/A" }}</td>
+                        <td>{{ reg.clazz.course.course_name if reg.clazz and reg.clazz.course else "N/A" }}</td>
+                        <td>{{ reg.clazz.course.credits if reg.clazz and reg.clazz.course else "N/A" }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>Chưa đăng ký lớp nào</p>
+                {% endif %}
+
+            </div>
+        </div>
+
+
+    </div>
+</div>
+{% endblock %}

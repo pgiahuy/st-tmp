@@ -1,25 +1,71 @@
 <head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">Logo</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="collapsibleNavbar">
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="#">Link</a>
-        </li>
-      </ul>
+    <div class="container-fluid">
+
+        <a class="navbar-brand" href="/">HCMC-OU</a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="collapsibleNavbar">
+
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Trang chủ</a>
+                </li>
+
+                {% if current_user.is_authenticated %}
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                        Tiện ích
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="/register-course">
+                                <i class="bi bi-journal-plus me-2"></i>Đăng ký môn học
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="/schedule">
+                                <i class="bi bi-calendar-week me-2"></i>Thời khóa biểu
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
+                <ul class="navbar-nav me-2">
+                    <li class="nav-item dropdown">
+                        <button class="btn btn-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"> {{
+                            current_user.student.full_name if current_user.student else current_user.username }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="/userinfo"><i class="bi bi-person-fill me-2"></i>Hồ sơ</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-left me-2"></i>Đăng xuất</a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+
+                {% else %}
+                <li class="nav-item">
+                    <a class="nav-link" href="/login">Đăng nhập<i class="bi bi-box-arrow-in-left ms-2"></i></a>
+                </li>
+                {% endif %}
+            </ul>
+
+        </div>
     </div>
-  </div>
 </nav>
