@@ -73,6 +73,8 @@ class CourseClass(Base):
     max_students = Column(Integer)
     registrations = db.relationship("Registration", backref="course_class")
 
+
+
 class Room(Base):
     __tablename__ = "rooms"
 

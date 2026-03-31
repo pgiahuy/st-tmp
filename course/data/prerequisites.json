@@ -1,6 +1,33 @@
 {
   "prerequisites": [
-    { "course_id": 2, "prerequisite_id": 1 },
-    { "course_id": 3, "prerequisite_id": 2 }
+    { "course_id": 4, "prerequisite_id": 1 },
+    {"note": "Kỹ thuật lập trình cần Cơ sở lập trình"},
+
+    { "course_id": 6, "prerequisite_id": 4 },
+    {"note": "Cấu trúc dữ liệu cần Kỹ thuật lập trình"},
+
+    { "course_id": 10, "prerequisite_id": 4 },
+    {"note": "Lập trình hướng đối tượng cần Kỹ thuật lập trình"},
+
+    { "course_id": 8, "prerequisite_id": 6 },
+    {"note": "Cơ sở dữ liệu cần Cấu trúc dữ liệu"},
+
+    { "course_id": 9, "prerequisite_id": 3 },
+    {"note": "Mạng máy tính cần Hệ điều hành & KTMT"},
+
+    { "course_id": 12, "prerequisite_id": 10 },
+    {"note": "Công nghệ phần mềm cần OOP"},
+
+    { "course_id": 13, "prerequisite_id": 8 },
+    {"note": "Phân tích thiết kế hệ thống cần Cơ sở dữ liệu"},
+
+    { "course_id": 17, "prerequisite_id": 10 },
+    {"note": "An toàn HTTT cần OOP"},
+
+    { "course_id": 18, "prerequisite_id": 8 },
+    {"note": "Quản trị CSDL cần Cơ sở dữ liệu"},
+
+    { "course_id": 20, "prerequisite_id": 9 },
+    {"note": "Quản trị mạng cần Mạng máy tính"}
   ]
 }
