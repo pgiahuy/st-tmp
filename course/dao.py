@@ -70,6 +70,11 @@ def add_room(name, capacity):
     except IntegrityError:
         db.session.rollback()
 
+def add_user(username, password):
+    user = User(username=username, password=hash_password(password))
+    db.session.add(user)
+
+
 from course.models import CourseClass
 def add_course_class(id, class_code, course_id, schedule, room_id, max_students):
     c_class = CourseClass(
@@ -86,6 +91,7 @@ def add_course_class(id, class_code, course_id, schedule, room_id, max_students)
     except IntegrityError:
         db.session.rollback()
         print(f"Lớp {class_code} đã tồn tại hoặc lỗi khóa ngoại!")
+
 def add_system_config(key, value,name,description=None):
     rule = SystemConfig(key=key, value=value,name=name, description=description)
     db.session.add(rule)
