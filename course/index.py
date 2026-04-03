@@ -1,7 +1,7 @@
 from flask import render_template, request, session
 from werkzeug.utils import redirect
 
-from course import app, dao, login, db
+from course import app, dao, login, db, api
 
 from flask_login import logout_user, login_user, current_user, login_required, login_required
 from course.models import UserRole
@@ -90,25 +90,23 @@ def change_password():
         err_msg=err_msg,
         success_msg=success_msg
     )
-  
-@app.route('/register-course', methods=['GET', 'POST'])
+
+
+@app.route('/register-course')
 @login_required
-def register_course():
-    courses = dao.get_courses()
+def register_course_page():
+    student = dao.get_student_by_mssv(current_user.username)
+    courses = dao.get_course_classes()  # tất cả lớp
+    registered_ids = [reg.course_class_id for reg in student.registrations if reg.semester_id == dao.get_current_semester().id]
 
-    course_id = request.args.get('course_id')
-
-    selected_course_id = course_id
-    selected_filter_type = request.args.get('filter_type', '')
-
-    classes = dao.get_course_classes(course_id=course_id)
-
-    return render_template('register_course.html',
-                           courses=courses,
-                           classes=classes,
-                           selected_course_id = selected_course_id,
-                           selected_filter_type = selected_filter_type)
-
-
+    return render_template(
+        'register_course.html',
+        courses=courses,
+        registered_ids=registered_ids,
+        selected_filter_type=request.args.get('filter_type', ''),
+        selected_course_id=request.args.get('course_id', ''),
+        selected_class_id=request.args.get('class_id', ''),
+        student_classes=dao.get_course_classes_for_student(student.id)
+    )
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

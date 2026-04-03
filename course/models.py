@@ -1,5 +1,5 @@
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean,Enum as SQLEnum, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum as SQLEnum, DateTime, func
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from enum import Enum
@@ -9,6 +9,21 @@ from course import db, app
 class UserRole(Enum):
     USER = 1
     ADMIN = 2
+
+
+class Day(Enum):
+    MONDAY = "Mon"
+    TUESDAY = "Tue"
+    WEDNESDAY = "Wed"
+    THURSDAY = "Thu"
+    FRIDAY = "Fri"
+    SATURDAY = "Sat"
+    SUNDAY = "Sun"
+
+class Session(Enum):
+    MORNING = "Sáng"
+    AFTERNOON = "Chiều"
+    EVENING = "Tối"
 
 class Base(db.Model):
     __abstract__ = True
@@ -67,12 +82,24 @@ class CourseClass(Base):
     class_code = Column(String(20), unique=True)
     course_id = Column(Integer, ForeignKey("courses.id"))
 
-    schedule = Column(String(50))  # Mon-1-3 / Tue-1-5 / Sat-7-11
     room_id = Column(Integer, ForeignKey("rooms.id"))
     room = db.relationship("Room", backref="classes")
     max_students = Column(Integer)
+    schedule_slots = relationship("ScheduleSlot", back_populates="course_class")
     registrations = db.relationship("Registration", backref="course_class")
 
+
+
+class ScheduleSlot(Base):
+    __tablename__ = "schedule_slots"
+
+    id = Column(Integer, primary_key=True)
+    course_class_id = Column(Integer, ForeignKey("course_classes.id"))
+    weekday = Column(SQLEnum(Day), nullable=False)
+
+    session = Column(SQLEnum(Session), nullable=False)
+
+    course_class = relationship("CourseClass", back_populates="schedule_slots")
 
 
 class Room(Base):
@@ -80,6 +107,7 @@ class Room(Base):
 
     name = Column(String(50), unique=True, nullable=False)
     capacity = Column(Integer, nullable=False)
+
 
 class Semester(Base):
     __tablename__ = "semesters"
@@ -99,7 +127,7 @@ class Registration(Base):
     course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     semester_id = Column(Integer, ForeignKey("semesters.id"))
 
-    registered_at = Column(DateTime, default=datetime.now())
+    registered_at = Column(DateTime, default=func.now())
 
     __table_args__ = (
         db.UniqueConstraint('student_id', 'course_class_id', name='unique_registration'),
@@ -111,6 +139,8 @@ class CoursePrerequisite(Base):
 
     course_id = Column(Integer, ForeignKey("courses.id"))
     prerequisite_id = Column(Integer, ForeignKey("courses.id"))
+
+
 
 class SystemConfig(Base):
     __tablename__ = "system_configs"
