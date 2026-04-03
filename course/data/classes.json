@@ -1,20 +1,11 @@
 {
   "classes": [
-    {
-      "id": 101,
-      "class_code": "CS101-01",
-      "course_id": 2,
-      "schedule": "Mon-1-3",
-      "room_id": 1,
-      "max_students": 40
-    },
-    {
-      "id": 102,
-      "class_code": "AI101-01",
-      "course_id": 3,
-      "schedule": "Mon-2-4",
-      "room_id": 1,
-      "max_students": 40
-    }
+    { "class_code": "ITEC1505-L01", "course_id": 1, "room_id": 1, "max_students": 40 },
+    {  "class_code": "ITEC1505-L02", "course_id": 1, "room_id": 2, "max_students": 40 },
+    {  "class_code": "ITEC1401-L01", "course_id": 2, "room_id": 1, "max_students": 45 },
+    {  "class_code": "ITEC1401-L02", "course_id": 2,  "room_id": 3, "max_students": 45 },
+    {  "class_code": "ITEC1310-L01", "course_id": 3, "room_id": 3, "max_students": 35 },
+    { "class_code": "ITEC1310-L02", "course_id": 3, "room_id": 1, "max_students": 35 }
+
   ]
 }

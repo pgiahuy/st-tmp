@@ -13,8 +13,8 @@ app.config["MAX"] = True
 app.config["DEFAULT_PASSWORD"] = "Abc1234@"
 db = SQLAlchemy(app=app)
 login = LoginManager(app=app)
-from course import admin
 
+from course import admin
 
 cloudinary.config(
     cloud_name='dslzjm9y1',
