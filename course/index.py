@@ -100,20 +100,5 @@ def register_course_page():
                            courses=courses)
 
 
-# @app.route('/register-course', methods=['GET', 'POST'])
-# @login_required
-# def register_course():
-#     courses = dao.get_course_classes()
-#     course_id = request.args.get('course_id')
-#     selected_course_id = course_id
-#     selected_filter_type = request.args.get('filter_type', '')
-#     classes = dao.get_course_classes(course_id=course_id)
-#     return render_template('register_course.html',
-#                            courses=courses,
-#                            classes=classes,
-#                            selected_course_id = selected_course_id,
-#                            selected_filter_type = selected_filter_type)
-
-
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

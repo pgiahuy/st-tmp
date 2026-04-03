@@ -28,7 +28,11 @@
         <div class="col-md-4 {% if selected_filter_type != 'course' %}d-none{% endif %}" id="courseBox">
             <label class="form-label fw-semibold">Chọn môn</label>
 
+<<<<<<< HEAD
             <select name="course_id" class="form-select">
+=======
+            <select name="course_id" id="courseSelect" class="form-select">
+>>>>>>> 9824742712d705594583bf9c219757b762e674dd
                 <option value="">-- Chọn môn --</option>
                 {% for course in courses %}
                 <option value="{{ course.id }}"
@@ -39,6 +43,10 @@
             </select>
         </div>
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9824742712d705594583bf9c219757b762e674dd
         <div class="col-md-4 {% if selected_filter_type != 'class' %}d-none{% endif %}" id="classBox">
             <label class="form-label fw-semibold">Chọn lớp</label>
             <select name="class_id" class="form-select">
@@ -51,7 +59,11 @@
 
         <div class="col-12">
             <button class="btn btn-primary">
+<<<<<<< HEAD
                 Lọc
+=======
+                <i class="bi bi-funnel"></i> Lọc
+>>>>>>> 9824742712d705594583bf9c219757b762e674dd
             </button>
 
             <a href="/register-course" class="btn btn-outline-secondary">
@@ -62,6 +74,7 @@
     </form>
 </div>
 
+<<<<<<< HEAD
 <table class="table table-bordered table-hover shadow-sm">
     <thead class="table-dark">
         <tr>
@@ -100,3 +113,37 @@
 
 <script src="{{ url_for('static', filename='js/register_course.js') }}"></script>
 {% endblock %}
+=======
+
+<table class="table table-bordered table-hover shadow-sm">
+    <thead class="table-dark">
+    <tr>
+        <th>Mã lớp</th>
+        <th>Môn học</th>
+        <th>Tín chỉ</th>
+        <th>Lịch học</th>
+        <th></th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for c in classes %}
+    <tr>
+        <td>{{ c.class_code }}</td>
+        <td>{{ c.course.course_name }}</td>
+        <td>{{ c.course.credits }}</td>
+        <td>{{ c.schedule }}</td>
+        <td>
+            <form method="post">
+                <input type="hidden" name="class_id" value="{{ c.id }}">
+                <button class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-circle"></i> Đăng ký
+                </button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}
+>>>>>>> 9824742712d705594583bf9c219757b762e674dd

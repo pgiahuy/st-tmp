@@ -88,6 +88,8 @@ class CourseClass(Base):
     schedule_slots = relationship("ScheduleSlot", back_populates="course_class")
     registrations = db.relationship("Registration", backref="course_class")
 
+
+
 class ScheduleSlot(Base):
     __tablename__ = "schedule_slots"
 

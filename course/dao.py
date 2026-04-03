@@ -1,8 +1,9 @@
 import hashlib
 from datetime import datetime
 
-from course import db
-from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite
+from course import db,app
+from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite,UserRole
+from sqlalchemy.exc import IntegrityError
 
 
 def hash_password(password):
@@ -16,6 +17,14 @@ def get_student_by_id(id):
 
 def get_student_by_mssv(id):
     return Student.query.filter_by(mssv=id).first()
+
+def get_courses():
+    return Course.query.order_by(Course.course_name).all()
+def get_course_classes(course_id=None):
+    query = CourseClass.query
+    if course_id:
+        query = query.filter_by(course_id=course_id)
+    return query.all()
 
 def auth_user(username, password, session):
     if not username or username is None:
@@ -82,6 +91,16 @@ def get_current_semester():
         # Semester.end_date >= today
     ).first()
 
+
+def add_student(mssv,full_name, email):
+    student = Student(mssv=mssv, full_name=full_name, email=email)
+    db.session.add(student)
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        raise Exception('Sinh viên đã tồn tại!')
+
 def get_total_credits(student, semester):
     total = 0
     for reg in student.registrations:
@@ -91,9 +110,6 @@ def get_total_credits(student, semester):
 
 def unregister_course(student_id, course_class_id):
     pass
-
-
-
 
 
 def get_all_student_studied(student_id, current_semester_id=None):
@@ -165,3 +181,17 @@ def course_class_is_full(course_class_id):
 
 
 
+def change_password(user_id, old_password, new_password):
+    user = get_user_by_id(user_id)
+
+    if not user:
+        return {"error": "User không tồn tại"}
+    print(user)
+
+    if user.password != hash_password(old_password):
+        return {"error": "Mật khẩu cũ không đúng"}
+
+    user.password = hash_password(new_password)
+    db.session.commit()
+
+    return {"success": True}

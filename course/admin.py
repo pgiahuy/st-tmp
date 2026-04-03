@@ -58,6 +58,7 @@ class StudentAdmin(AdminAccessMixin, ModelView):
 
         if is_created:
             user = course.utils.add_user_student(student_id=model.id)
+
             print("User:", user)
 
             model.user_id = user.id
