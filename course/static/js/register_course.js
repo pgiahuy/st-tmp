@@ -1,55 +1,65 @@
+document.getElementById('filterType').addEventListener('change', function() {
+    const courseBox = document.getElementById('courseBox');
+    const classBox = document.getElementById('classBox');
 
-document.querySelectorAll('.register-checkbox').forEach(cb => {
-    cb.addEventListener('change', async function () {
+    if (this.value === 'course') {
+        courseBox.classList.remove('d-none');
+        classBox.classList.add('d-none');
+    } else if (this.value === 'class') {
+        classBox.classList.remove('d-none');
+        courseBox.classList.add('d-none');
+    } else {
+        courseBox.classList.add('d-none');
+        classBox.classList.add('d-none');
+    }
+});
 
-        const classId = this.dataset.classId;
-        const isChecked = this.checked;
+const tableBody = document.querySelector('table tbody');
+tableBody.addEventListener('change', async function(e) {
+    const checkbox = e.target;
+    if (!checkbox.classList.contains('register-checkbox')) return;
 
-        this.disabled = true;
+    const classId = checkbox.dataset.classId;
+    if (!classId) return;
 
-        try {
-            const res = await fetch('/api/course-register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    course_class_id: classId,
-                    action: isChecked ? 'register' : 'unregister'
-                })
-            });
+    if (checkbox.dataset.processing === '1') return;
+    checkbox.dataset.processing = '1';
 
-            const data = await res.json();
+    const isChecked = checkbox.checked;
+    checkbox.disabled = true;
 
-            if (!data.success) {
-                alert(data.message || "Lỗi");
-                this.checked = !isChecked;
-            }
-
-        } catch (err) {
-            alert("Server error");
-            this.checked = !isChecked;
-        }
-
-        this.disabled = false;
-
-
-// confirm
-document.getElementById('confirmBtn').onclick = async () => {
     try {
-        const res = await fetch('/api/register-course/confirm', {
-            method: 'POST'
+        const res = await fetch('/api/course-register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                course_class_id: classId,
+                action: isChecked ? 'register' : 'unregister'
+            })
         });
 
-        const data = await res.json();
+        const result = await res.json();
 
-        if (data.success) {
-            alert("success " + data.message);
-        } else {
-            alert("failure " + data.message);
+        if (!result.success) {
+            alert(result.message || 'Đăng ký thất bại');
+            checkbox.checked = !isChecked;
         }
 
     } catch (err) {
+        alert('Lỗi server, vui lòng thử lại');
+        checkbox.checked = !isChecked;
+    } finally {
+        checkbox.disabled = false;
+        checkbox.dataset.processing = '0';
+    }
+});
+
+document.getElementById('confirmBtn').addEventListener('click', async () => {
+    try {
+        const res = await fetch('/api/register-course/confirm', { method: 'POST' });
+        const data = await res.json();
+        alert(data.success ? "Success: " + data.message : "Failure: " + data.message);
+    } catch (err) {
         alert("Server error");
     }
-};
+});

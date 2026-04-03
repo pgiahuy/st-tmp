@@ -92,13 +92,21 @@ def change_password():
     )
 
 
-@app.route('/register-course', methods=['GET'])
+@app.route('/register-course')
 @login_required
 def register_course_page():
-    courses = dao.get_all_course_classes()
-    return render_template('register_course.html',
-                           courses=courses)
+    student = dao.get_student_by_mssv(current_user.username)
+    courses = dao.get_course_classes()  # tất cả lớp
+    registered_ids = [reg.course_class_id for reg in student.registrations if reg.semester_id == dao.get_current_semester().id]
 
-
+    return render_template(
+        'register_course.html',
+        courses=courses,
+        registered_ids=registered_ids,
+        selected_filter_type=request.args.get('filter_type', ''),
+        selected_course_id=request.args.get('course_id', ''),
+        selected_class_id=request.args.get('class_id', ''),
+        student_classes=dao.get_course_classes_for_student(student.id)
+    )
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

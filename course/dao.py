@@ -47,7 +47,7 @@ def register_course(student_id, course_class_id):
     if not course_class:
         return {"success": False, "message": "Không tìm thấy lớp học phần"}, 400
     if not student:
-        raise Exception("Sinh viên không tồn tại!")
+        return {"success": False, "message": "Không tìm thấy sinh viên"}, 400
 
     if course_class_is_full(course_class_id):
         raise Exception("Lớp đã đầy!")
@@ -61,10 +61,14 @@ def register_course(student_id, course_class_id):
     if not check_studied_prerequisites(student_id, course_class_id):
         raise Exception("Chưa học xong các môn tiên quyết!")
 
+    if check_duplicate_in_semester(student_id, course_class_id):
+        raise Exception("Không được đăng ký trùng môn!")
     semester = get_current_semester()
+
+
     print("semester = ", semester.id)
     reg = Registration(student_id=student_id, course_class_id=course_class_id,
-                       semester_id=2)
+                       semester_id=semester.id)
 
     db.session.add(reg)
     db.session.commit()
@@ -83,6 +87,20 @@ def confirm_registration(student_id):
 
     db.session.commit()
 
+
+def get_course_classes_for_student(student_id):
+    student = get_student_by_id(student_id)
+    if not student:
+        return []
+
+    semester = get_current_semester()
+    registered_classes = [
+        reg.course_class
+        for reg in student.registrations
+        if reg.semester_id == semester.id
+    ]
+
+    return registered_classes
 
 def get_current_semester():
     today = datetime.now()
@@ -108,8 +126,19 @@ def get_total_credits(student, semester):
             total += reg.class_section.course.credits
     return total
 
+
 def unregister_course(student_id, course_class_id):
-    pass
+    semester = get_current_semester()
+    reg = Registration.query.filter_by(
+        student_id=student_id,
+        course_class_id=course_class_id,
+        semester_id=semester.id
+    ).first()
+    if not reg:
+        raise Exception("Lớp chưa đăng ký")
+    # @minuong check var chỗ này điii
+    db.session.delete(reg)
+    db.session.commit()
 
 
 def get_all_student_studied(student_id, current_semester_id=None):
@@ -132,6 +161,23 @@ def get_all_student_studied(student_id, current_semester_id=None):
 
     return set(student_studied)
 
+
+def check_duplicate_in_semester(student_id, course_class_id):
+
+    semester = get_current_semester()
+    if not semester:
+        raise Exception("Không tìm thấy kỳ học hiện tại")
+
+    course_id = get_course_class_by_id(course_class_id).course.id
+
+    student = get_student_by_id(student_id)
+    for reg in student.registrations:
+        if reg.semester_id != semester.id:
+            continue
+        existing_course_id = get_course_class_by_id(reg.course_class_id).course.id
+        if existing_course_id == course_id:
+            return True
+    return False
 
 def check_schedule_not_conflict(student_id, course_class_id):
 

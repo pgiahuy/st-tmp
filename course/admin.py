@@ -1,12 +1,14 @@
 from flask import url_for, request
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.form import DatePickerWidget
 from flask_login import current_user
 from werkzeug.utils import redirect
+from wtforms.fields.datetime import DateField
 
 import course.utils
 from course import app, db, dao
-from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig
+from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig,Registration, Semester
 
 
 class AdminAccessMixin:
@@ -81,6 +83,29 @@ class ClassAdmin(AdminAccessMixin, ModelView):
         'course': 'Môn học',
     }
 
+class RegistrationAdmin(AdminAccessMixin, ModelView):
+    pass
+
+
+class SemesterAdmin(AdminAccessMixin, ModelView):
+    column_list = ('id', 'name', 'year', 'start_date', 'registration_deadline')
+
+    column_searchable_list = ('name', 'year')
+
+    column_sortable_list = ('id', 'name', 'year', 'start_date', 'registration_deadline')
+
+    form_overrides = {
+        'start_date': DateField,
+        'registration_deadline': DateField
+    }
+    form_args = {
+        'start_date': {'widget': DatePickerWidget()},
+        'registration_deadline': {'widget': DatePickerWidget()}
+    }
+
+    form_excluded_columns = ('created_date', 'registrations')
+
+
 class RoomAdmin(AdminAccessMixin, ModelView):
     column_labels = {
 
@@ -104,6 +129,9 @@ admin.add_view(CourseAdmin(Course, db.session,name='MÔN HỌC'))
 admin.add_view(StudentAdmin(Student, db.session,name='SINH VIÊN'))
 admin.add_view(UserAdmin(User, db.session,name='TÀI KHOẢN'))
 admin.add_view(ClassAdmin(CourseClass, db.session,name='LỚP'))
+admin.add_view(RegistrationAdmin(Registration, db.session,name='ĐĂNG KÝ'))
+
+admin.add_view(SemesterAdmin(Semester, db.session,name='HỌC KỲ'))
 admin.add_view(RoomAdmin(Room, db.session,name='PHÒNG HỌC'))
 admin.add_view(RuleAdmin(SystemConfig, db.session,name='QUY ĐỊNH'))
 
