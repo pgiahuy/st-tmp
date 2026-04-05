@@ -11,36 +11,63 @@ from course.models import UserRole
 def index():
     return render_template('index.html')
 
-@app.route('/admin/login', methods=['GET', 'POST'])
-def admin_login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+# @app.route('/admin/login', methods=['GET', 'POST'])
+# def admin_login():
+#     if request.method == 'POST':
+#         username = request.form.get('username')
+#         password = request.form.get('password')
+#         user = dao.auth_user(username=username, password=password ,session=db.session)
+#         if user and user.role == UserRole.ADMIN:
+#             login_user(user)
+#             return redirect('/admin')
+#         return render_template('admin/login.html', err_msg='Sai tài khoản hoặc không phải admin!')
+#     return render_template('admin/login.html')
 
-        user = dao.auth_user(username=username, password=password ,session=db.session)
-
-        if user and user.role == UserRole.ADMIN:
-            login_user(user)
-            return redirect('/admin')
-
-        return render_template('admin/login.html', err_msg='Sai tài khoản hoặc không phải admin!')
-
-    return render_template('admin/login.html')
+import re
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_my_user():
     err_msg = None
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = dao.auth_user(username, password, session=db.session)
-        if user:
-            login_user(user)
-            return redirect("/")
-        else:
-            err_msg = "Mã số sinh viên hoặc mật khẩu không đúng!"
+    username = None
+    role = None
 
-    return render_template('login.html', err_msg=err_msg)
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        role = request.form.get('role')
+
+        if not username or not password:
+            err_msg = "Vui lòng nhập đầy đủ tài khoản và mật khẩu!"
+            return render_template('login.html', err_msg=err_msg, roles=UserRole)
+
+        if not role:
+            err_msg = "Vui lòng chọn vai trò!"
+            return render_template('login.html', err_msg=err_msg, roles=UserRole)
+
+        if role == "USER":
+            if not re.fullmatch(r"\d{10}", username):
+                err_msg = "Mã số sinh viên phải là 10 chữ số!"
+                return render_template('login.html', err_msg=err_msg, roles=UserRole)
+
+        user = dao.auth_user(username, password, session=db.session, role=role)
+
+        if user is None:
+            err_msg = "Sai tài khoản hoặc mật khẩu!"
+        else:
+            login_user(user)
+            return redirect("/" if user.role == UserRole.USER else "/admin")
+
+    return render_template('login.html',
+                           err_msg=err_msg,
+                           roles=UserRole,
+                           old_username=username,
+                           old_role=role
+                           )
+
+
+
+
+
 
 @app.route("/logout")
 def logout_my_user():
@@ -95,17 +122,25 @@ def change_password():
 @app.route('/register-course')
 @login_required
 def register_course_page():
+
+    kw = request.args.get('kw')
+    course_id = request.args.get('course_id')
+
     student = dao.get_student_by_mssv(current_user.username)
-    courses = dao.get_course_classes()  # tất cả lớp
-    registered_ids = [reg.course_class_id for reg in student.registrations if reg.semester_id == dao.get_current_semester().id]
+
+    course_classes = dao.get_course_classes(course_id=course_id, kw=kw)
+    course_classes_in_semester = dao.get_course_classes()
+
+
+    registered_ids = [reg.course_class_id for reg in student.registrations
+                      if reg.semester_id == dao.get_current_semester().id]
 
     return render_template(
         'register_course.html',
-        courses=courses,
+        course_classes_in_semester = course_classes_in_semester,
+        selected_course_id=course_id,
+        course_classes=course_classes,
         registered_ids=registered_ids,
-        selected_filter_type=request.args.get('filter_type', ''),
-        selected_course_id=request.args.get('course_id', ''),
-        selected_class_id=request.args.get('class_id', ''),
         student_classes=dao.get_course_classes_for_student(student.id)
     )
 if __name__ == "__main__":

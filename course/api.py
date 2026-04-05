@@ -6,6 +6,7 @@ from course import dao, app
 
 
 
+
 @app.route('/api/course-register', methods=['POST'])
 @login_required
 def register_course():
@@ -73,6 +74,8 @@ def unregister_course_route(course_class_id):
 
     try:
         dao.unregister_course(student_id, course_class_id)
-        return jsonify({"success": True, "message": "Huỷ thành công"}), 200
+        return jsonify({
+            "success": True
+        }), 200
     except Exception as e:
         return jsonify({"success": False, "message": str(e)}), 400

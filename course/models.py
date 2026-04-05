@@ -7,9 +7,12 @@ from course import db, app
 
 
 class UserRole(Enum):
-    USER = 1
-    ADMIN = 2
+    USER = (1, "Sinh viên")
+    ADMIN = (2, "Quản trị viên")
 
+    def __init__(self, id, label):
+        self.id = id
+        self.label = label
 
 class Day(Enum):
     MONDAY = "Mon"

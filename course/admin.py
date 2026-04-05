@@ -8,7 +8,7 @@ from wtforms.fields.datetime import DateField
 
 import course.utils
 from course import app, db, dao
-from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig,Registration, Semester
+from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig,Registration, Semester, ScheduleSlot
 
 
 class AdminAccessMixin:
@@ -68,6 +68,7 @@ class StudentAdmin(AdminAccessMixin, ModelView):
 
 
 class CourseAdmin(AdminAccessMixin, ModelView):
+
     column_labels = {
         'course_code': 'Mã MH',
         'course_name': 'Tên MH',
@@ -75,13 +76,25 @@ class CourseAdmin(AdminAccessMixin, ModelView):
     }
 
 class ClassAdmin(AdminAccessMixin, ModelView):
+    column_list = (
+        'room',
+        'class_code',
+        'course_name',
+        'max_students',
+        'schedule_slots',
+        'course'
+    )
     column_labels = {
         'class_code': 'Tên lớp',
         'room': 'Phòng',
-        'schedule': 'Lịch học',
+        'schedule_slots': 'Lịch học',
         'max_students': 'Sĩ số',
         'course': 'Môn học',
     }
+
+
+class ScheduleSlotAdmin(AdminAccessMixin, ModelView):
+    pass
 
 class RegistrationAdmin(AdminAccessMixin, ModelView):
     pass
@@ -130,6 +143,7 @@ admin.add_view(StudentAdmin(Student, db.session,name='SINH VIÊN'))
 admin.add_view(UserAdmin(User, db.session,name='TÀI KHOẢN'))
 admin.add_view(ClassAdmin(CourseClass, db.session,name='LỚP'))
 admin.add_view(RegistrationAdmin(Registration, db.session,name='ĐĂNG KÝ'))
+admin.add_view(ScheduleSlotAdmin(ScheduleSlot, db.session,name='BUỔI HỌC'))
 
 admin.add_view(SemesterAdmin(Semester, db.session,name='HỌC KỲ'))
 admin.add_view(RoomAdmin(Room, db.session,name='PHÒNG HỌC'))

@@ -7,48 +7,31 @@
 <div class="card shadow-sm p-3 mb-4">
     <form method="get" class="row g-3 align-items-center">
 
-        <div class="col-md-4">
-            <label class="form-label fw-semibold">Lọc theo</label>
-            <select name="filter_type" id="filterType" class="form-select">
-                <option value="">-- Chọn --</option>
-                <option value="course" {% if selected_filter_type=='course' %}selected{% endif %}>
-                    Môn học
-                </option>
-                <option value="class" {% if selected_filter_type=='class' %}selected{% endif %}>
-                    Lớp sinh viên
-                </option>
-            </select>
-        </div>
 
-        <div class="col-md-4 {% if selected_filter_type != 'course' %}d-none{% endif %}" id="courseBox">
+        <div class="col-md-4" id="courseBox">
             <label class="form-label fw-semibold">Chọn môn</label>
             <select name="course_id" id="courseSelect" class="form-select">
-                <option value="">-- Chọn môn --</option>
-                {% for course in courses %}
-                <option value="{{ course.id }}" {% if selected_course_id == course.id|string %}selected{% endif %}>
-                    {{ course.course_code }} - {{ course.course_name }}
+                <option value="">-- Tất cả --</option>
+
+                {% for course in course_classes_in_semester %}
+                <option value="{{ course.course.id }}"
+                        {% if selected_course_id== course.id|string %}selected{% endif %}>
+                    {{ course.course.course_code }} - {{ course.course.course_name }}
                 </option>
                 {% endfor %}
             </select>
         </div>
 
-        <div class="col-md-4 {% if selected_filter_type != 'class' %}d-none{% endif %}" id="classBox">
+        <div class="col-md-4 " id="classBox">
             <label class="form-label fw-semibold">Chọn lớp</label>
             <select name="class_id" id="classSelect" class="form-select">
-                <option value="">-- Chọn lớp --</option>
+                <option value="">-- Tất cả --</option>
                 {% for cl in student_classes %}
-                <option value="{{ cl.id }}" {% if selected_class_id == cl.id|string %}selected{% endif %}>
+                <option value="{{ cl.id }}" {% if selected_class_id== cl.id|string %}selected{% endif %}>
                     {{ cl.name }}
                 </option>
                 {% endfor %}
             </select>
-        </div>
-
-        <div class="col-12">
-            <button class="btn btn-primary me-2">
-                Lọc <i class="bi bi-funnel"></i>
-            </button>
-            <a href="{{ url_for('register_course') }}" class="btn btn-outline-secondary">Reset</a>
         </div>
 
     </form>
@@ -56,7 +39,54 @@
 
 <table class="table table-bordered table-hover shadow-sm">
     <thead class="table-dark">
-    <tr>
+    <tr class="text-center">
+        <th>Mã lớp</th>
+        <th>Môn học</th>
+        <th>Tín chỉ</th>
+        <th>Lịch học</th>
+        <th>Phòng</th>
+        <th>Sĩ số</th>
+        <th>Đăng ký</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for c in course_classes %}
+    <tr class="text-center {% if c.is_full %}table-secondary{% endif %}">
+        <td>{{ c.class_code }}</td>
+        <td class="text-start ms-5">{{ c.course.course_name }}</td>
+        <td>{{ c.course.credits }}</td>
+        <td>
+            {% for slot in c.schedule_slots %}
+            {{ slot.weekday.value }} - {{ slot.session.value }}<br>
+            {% endfor %}
+        </td>
+        <td>{{c.room}}</td>
+        <td>
+            <span style="color: blue;">{{ c.registrations|length }}</span> / <span style="color: black;">{{ c.max_students }}</span>
+        </td>
+        <td>
+            <input type="checkbox"
+                   class="form-check-input register-checkbox"
+                   data-class-id="{{ c.id }}"
+                   {% if c.id in registered_ids %}checked{% endif %}
+                   {% if c.is_full %}disabled title="Lớp đã đầy" {% endif %}>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<div class="d-flex mt-3">
+    <button id="confirmBtn" class="btn btn-success ms-auto">Xuất phiếu đăng ký</button>
+</div>
+
+<hr class="mt-4">
+
+<h3 class="mb-2 fw-bold mt-4">CÁC MÔN ĐÃ ĐĂNG KÝ</h3>
+
+<table class="table table-bordered table-hover shadow-sm">
+    <thead class="table-dark">
+    <tr class="text-center">
         <th>Mã lớp</th>
         <th>Môn học</th>
         <th>Tín chỉ</th>
@@ -65,29 +95,25 @@
     </tr>
     </thead>
     <tbody>
-    {% for c in courses %}
-    <tr class="{% if c.is_full %}table-secondary{% endif %}">
+    {% for c in student_classes %}
+    <tr class="text-center {% if c.is_full %}table-secondary{% endif %}">
         <td>{{ c.class_code }}</td>
-        <td>{{ c.course.course_name }}</td>
+        <td class="text-start ms-5">{{ c.course.course_name }}</td>
+
         <td>{{ c.course.credits }}</td>
         <td>
             {% for slot in c.schedule_slots %}
-            {{ slot.day }} {{ slot.start_time }}-{{ slot.end_time }}<br>
+            {{ slot.weekday.value }} - {{ slot.session.value }}<br>
             {% endfor %}
         </td>
-        <td>
-            <input type="checkbox"
-                   class="form-check-input register-checkbox"
-                   data-class-id="{{ c.id }}"
-                   {% if c.id in registered_ids %}checked{% endif %}
-                   {% if c.is_full %}disabled title="Lớp đã đầy"{% endif %}>
+        <td class="text-center">
+            <i class="bi bi-x-square-fill unregister-icon"
+               data-class-id="{{ c.id }}"
+               style="cursor: pointer; color: red; font-size: 1.2rem;"
+               title="Huỷ đăng ký"></i>
         </td>
     </tr>
     {% endfor %}
     </tbody>
 </table>
-
-<button id="confirmBtn" class="btn btn-success mt-3">Xác nhận đăng ký</button>
-
-
 {% endblock %}

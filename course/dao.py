@@ -1,6 +1,8 @@
 import hashlib
 from datetime import datetime
 
+from cloudinary.provisioning import Role
+
 from course import db,app
 from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite,UserRole
 from sqlalchemy.exc import IntegrityError
@@ -20,19 +22,61 @@ def get_student_by_mssv(id):
 
 def get_courses():
     return Course.query.order_by(Course.course_name).all()
-def get_course_classes(course_id=None):
+
+
+def get_course_classes(course_id=None, kw = None):
     query = CourseClass.query
     if course_id:
         query = query.filter_by(course_id=course_id)
+
+    if kw:
+        query = query.filter(CourseClass.course_name.like('%'+kw+'%'))
+
     return query.all()
 
-def auth_user(username, password, session):
+
+def auth_user(username, password,role, session):
     if not username or username is None:
         raise Exception("Vui lòng nhập tên đăng nhập!")
     if not password or password is None:
         raise Exception("Vui lòng nhập mật khẩu!")
     password = str(hashlib.md5(password.strip().encode('utf-8')).hexdigest())
     return session.query(User).filter_by(username=username, password=password).first()
+
+import hashlib
+import re
+from sqlalchemy import func
+
+def auth_user(username, password, role, session):
+
+    if not username or not username.strip():
+        raise Exception("Vui lòng nhập tên đăng nhập!")
+    if not password or not password.strip():
+        raise Exception("Vui lòng nhập mật khẩu!")
+    if not role:
+        raise Exception("Vui lòng chọn vai trò!")
+
+    username = username.strip()
+
+    if role == "USER":
+        if not re.fullmatch(r"\d{10}", username):
+            raise Exception("Mã số sinh viên phải là 10 chữ số!")
+
+    password = hashlib.md5(password.strip().encode('utf-8')).hexdigest()
+
+    user = session.query(User).filter(
+        func.lower(User.username) == username.lower(),
+        User.password == password
+    ).first()
+
+    if user and user.role.name != role:
+        return None
+
+    return user
+
+
+
+
 
 def get_course_class_by_id(id):
     return CourseClass.query.filter_by(id=id).first()
@@ -241,3 +285,8 @@ def change_password(user_id, old_password, new_password):
     db.session.commit()
 
     return {"success": True}
+
+
+
+def get_courses_by_id(course_id):
+    return Course.query.filter_by(id=id).first()
