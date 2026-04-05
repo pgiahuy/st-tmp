@@ -64,15 +64,15 @@ with open('data/rules.json', encoding='utf-8') as f:
     with app.app_context():
         data = json.load(f)
         for r in data["rules"]:
-            dao.add_system_config(key=r["key"], value=r["value"], name=r["name"])
+            utils.add_system_config(key=r["key"], value=r["value"], name=r["name"])
         db.session.commit()
 
-with open('data/courses.json', encoding='utf-8') as f:
+
 with open('data/users.json', encoding='utf-8') as f:
     with app.app_context():
         data = json.load(f)
         for u in data["users"]:
-            dao.add_user(username=u["username"], password=u["password"])
+            utils.add_user(username=u["username"], password=u["password"])
         db.session.commit()
 
 # with open('data/rooms.json', encoding='utf-8') as f:
