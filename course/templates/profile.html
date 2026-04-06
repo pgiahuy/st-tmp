@@ -3,14 +3,17 @@
 {% block title %}Hồ sơ cá nhân{% endblock %}
 
 {% block content %}
+<div style="width:80%; margin:0 auto;">
+
 <div class="container mt-4">
     <div class="card shadow p-3">
-        <h3 class="text-center mb-4">HỒ SƠ CÁ NHÂN</h3>
+        <h2 class="text-center mb-4">HỒ SƠ CÁ NHÂN</h2>
 
         <div class="row">
 
-            <div class="col-md-6 border-end">
-                <h5>Thông tin sinh viên</h5>
+            <div class="col-md-4 border-end">
+                <h4>Thông tin sinh viên</h4>
+                <br>
                 <p><strong>Họ tên:</strong>
                     {{ current_user.student.full_name if current_user.student else "Chưa cập nhật" }}
                 </p>
@@ -28,26 +31,29 @@
                 </a>
             </div>
 
-            <div class="col-md-6">
-                <h5>Lớp đăng ký</h5>
-
+            <div class="col-md-8">
+                <h4 >Lớp đăng ký trong học kỳ hiện tại</h4>
+<br>
                 {% if current_user.student and current_user.student.registrations %}
                 <table class="table table-sm table-striped">
                     <thead>
                     <tr>
-                        <th>Học kỳ</th>
                         <th>Mã lớp</th>
                         <th>Môn học</th>
-                        <th>Credits</th>
+                        <th>Tín chỉ</th>
+                        <th>Phòng</th>
+
                     </tr>
                     </thead>
                     <tbody>
-                    {% for reg in current_user.student.registrations %}
+                    {% for c in student_classes %}
                     <tr>
-                        <td>{{ reg.semester.name if reg.semester else "N/A" }}</td>
-                        <td>{{ reg.clazz.class_code if reg.clazz else "N/A" }}</td>
-                        <td>{{ reg.clazz.course.course_name if reg.clazz and reg.clazz.course else "N/A" }}</td>
-                        <td>{{ reg.clazz.course.credits if reg.clazz and reg.clazz.course else "N/A" }}</td>
+                        <td>{{ c.class_code }}</td>
+                        <td class="text-start">{{ c.course.course_name }}</td>
+                        <td class="text-center">{{ c.course.credits }}</td>
+
+                        <td>{{ c.room.name if c.room else '—' }}</td>
+
                     </tr>
                     {% endfor %}
                     </tbody>
@@ -61,5 +67,6 @@
 
 
     </div>
+</div>
 </div>
 {% endblock %}

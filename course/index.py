@@ -4,11 +4,12 @@ from werkzeug.utils import redirect
 from course import app, dao, login, db, api
 
 from flask_login import logout_user, login_user, current_user, login_required, login_required
-from course.models import UserRole
+from course.models import UserRole, Day, Session
 
 
 @app.route('/')
 def index():
+    print(current_user)
     return render_template('index.html')
 
 # @app.route('/admin/login', methods=['GET', 'POST'])
@@ -70,16 +71,20 @@ def login_my_user():
 
 
 @app.route("/logout")
+@login_required
 def logout_my_user():
     logout_user()
     return redirect('/login')
 
 
 @app.route('/userinfo')
+@login_required
 def my_profile():
-    student = dao.get_student_by_id(current_user.student)
-
-    return render_template('profile.html', student=student)
+    student = dao.get_student_by_mssv(current_user.student.mssv)
+    student_classes = dao.get_course_classes_for_student(student.id)
+    return render_template('profile.html',
+                           student=student,
+                           student_classes=student_classes)
     
 
 
@@ -143,5 +148,40 @@ def register_course_page():
         registered_ids=registered_ids,
         student_classes=dao.get_course_classes_for_student(student.id)
     )
+
+
+@app.route('/timetable')
+@login_required
+def timetable_page():
+    current_semester = dao.get_current_semester()
+    semester_name = f"{current_semester.name} - {current_semester.year}"
+    student = dao.get_student_by_mssv(current_user.username)
+
+    student_classes = dao.get_course_classes_for_student(student.id)
+
+    days = [
+        {"name": "Thứ 2", "value": Day.MONDAY},
+        {"name": "Thứ 3", "value": Day.TUESDAY},
+        {"name": "Thứ 4", "value": Day.WEDNESDAY},
+        {"name": "Thứ 5", "value": Day.THURSDAY},
+        {"name": "Thứ 6", "value": Day.FRIDAY},
+        {"name": "Thứ 7", "value": Day.SATURDAY},
+    ]
+
+    sessions = [
+        {"name": Session.MORNING.display, "value": Session.MORNING},
+        {"name": Session.AFTERNOON.display, "value": Session.AFTERNOON},
+        {"name": Session.EVENING.display, "value": Session.EVENING},
+    ]
+
+    return render_template('timetable.html',
+                           student_classes=student_classes,
+                           semester_name=semester_name,
+                           days=days,
+                           sessions=sessions)
+
+
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

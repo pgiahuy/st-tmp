@@ -24,9 +24,23 @@ class Day(Enum):
     SUNDAY = "Sun"
 
 class Session(Enum):
-    MORNING = "Sáng"
-    AFTERNOON = "Chiều"
-    EVENING = "Tối"
+    MORNING   = ("Sáng",     "07:30", "12:00")
+    AFTERNOON = ("Chiều",    "13:00", "17:30")
+    EVENING   = ("Tối",      "18:00", "21:30")
+
+    def __init__(self, label: str, start: str, end: str):
+        self.label = label
+        self.start_time = start
+        self.end_time = end
+
+    def __str__(self):
+        return self.label
+
+    @property
+    def display(self):
+        return f"{self.label}<br><small class='text-muted'>({self.start_time} - {self.end_time})</small>"
+
+
 
 class Base(db.Model):
     __abstract__ = True
@@ -79,30 +93,44 @@ class Course(Base):
         backref="required_for"
     )
 
+
+class CourseClassSchedule(Base):
+    __tablename__ = "course_class_schedule_assoc"
+
+    course_class_id = Column(Integer, ForeignKey("course_classes.id"), primary_key=True)
+    slot_id = Column(Integer, ForeignKey("schedule_slots.id"), primary_key=True)
+
+    course_class = relationship("CourseClass", back_populates="schedule_associations")
+    slot = relationship("ScheduleSlot", back_populates="class_associations")
+
+
 class CourseClass(Base):
     __tablename__ = "course_classes"
 
+    id = Column(Integer, primary_key=True)
     class_code = Column(String(20), unique=True)
     course_id = Column(Integer, ForeignKey("courses.id"))
-
     room_id = Column(Integer, ForeignKey("rooms.id"))
-    room = db.relationship("Room", backref="classes")
     max_students = Column(Integer)
-    schedule_slots = relationship("ScheduleSlot", back_populates="course_class")
-    registrations = db.relationship("Registration", backref="course_class")
 
+    schedule_associations = relationship(
+        "CourseClassSchedule",
+        back_populates="course_class",
+        cascade="all, delete-orphan"
+    )
+
+    room = db.relationship("Room", backref="classes")
+    registrations = db.relationship("Registration", backref="course_class")
 
 
 class ScheduleSlot(Base):
     __tablename__ = "schedule_slots"
 
     id = Column(Integer, primary_key=True)
-    course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     weekday = Column(SQLEnum(Day), nullable=False)
-
     session = Column(SQLEnum(Session), nullable=False)
 
-    course_class = relationship("CourseClass", back_populates="schedule_slots")
+    class_associations = relationship("CourseClassSchedule", back_populates="slot")
 
 
 class Room(Base):

@@ -4,7 +4,7 @@ import cloudinary
 from flask_login import LoginManager
 
 
-app = Flask(__name__, template_folder='templates')
+app = Flask(__name__, template_folder='templates', static_folder='static')
 
 app.secret_key = 'isufheoihfeuheiohmioanwn'
 app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:root@localhost/coursedb?charset=utf8mb4"
@@ -15,6 +15,7 @@ db = SQLAlchemy(app=app)
 login = LoginManager(app=app)
 
 from course import admin
+
 
 cloudinary.config(
     cloud_name='dslzjm9y1',

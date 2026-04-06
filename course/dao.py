@@ -4,7 +4,8 @@ from datetime import datetime
 from cloudinary.provisioning import Role
 
 from course import db,app
-from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite,UserRole
+from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite, UserRole, \
+    CourseClassSchedule
 from sqlalchemy.exc import IntegrityError
 
 
@@ -96,8 +97,15 @@ def register_course(student_id, course_class_id):
     if course_class_is_full(course_class_id):
         raise Exception("Lớp đã đầy!")
 
-    if not check_schedule_not_conflict(student_id, course_class_id):
-        raise Exception("Trùng lịch học!")
+    conflicting_class = get_conflicting_class(student_id, course_class_id)
+    if conflicting_class:
+        new_class = CourseClass.query.get(course_class_id)
+
+        raise Exception(
+            f"Trùng lịch! Lớp {new_class.class_code} trùng lịch với lớp "
+            f"{conflicting_class.class_code} ({conflicting_class.course.course_name}) "
+            f" đã đăng ký"
+        )
 
     if not check_not_yet_studied(student_id, course_class_id):
         raise Exception("Không được đăng ký môn đã học!")
@@ -223,24 +231,38 @@ def check_duplicate_in_semester(student_id, course_class_id):
             return True
     return False
 
-def check_schedule_not_conflict(student_id, course_class_id):
+
+
+# var ở đây
+def get_conflicting_class(student_id, course_class_id):
 
     new_class = CourseClass.query.get(course_class_id)
-    semester_id = get_current_semester().id
+    current_semester = get_current_semester()
+
+    if not new_class or not current_semester:
+        return None
 
     student = get_student_by_id(student_id)
     registered_classes = [
         reg.course_class for reg in student.registrations
-        if reg.semester_id == semester_id
+        if reg.semester_id == current_semester.id
     ]
 
-    for new_slot in new_class.schedule_slots:
-        for clazz in registered_classes:
+    new_slots = {
+        (assoc.slot.weekday, assoc.slot.session)
+        for assoc in new_class.schedule_associations if assoc.slot
+    }
 
-            for slot in clazz.schedule_slots:
-                if new_slot.weekday == slot.weekday and new_slot.session == slot.session:
-                    return False
-    return True
+    for old_class in registered_classes:
+        old_slots = {
+            (assoc.slot.weekday, assoc.slot.session)
+            for assoc in old_class.schedule_associations if assoc.slot
+        }
+
+        if new_slots.intersection(old_slots):
+            return old_class
+
+    return None
 
 def check_not_yet_studied(student_id, course_class_id):
     student_studied = get_all_student_studied(student_id)
@@ -287,6 +309,18 @@ def change_password(user_id, old_password, new_password):
     return {"success": True}
 
 
-
 def get_courses_by_id(course_id):
     return Course.query.filter_by(id=id).first()
+
+
+def check_schedule_conflict(db_session, room_id, slot_ids, current_class_id=None):
+
+    conflict = db_session.query(CourseClassSchedule).join(CourseClass).filter(
+        CourseClass.room_id == room_id,
+        CourseClassSchedule.slot_id.in_(slot_ids)
+    )
+    if current_class_id:
+        conflict = conflict.filter(CourseClass.id != current_class_id)
+
+    return conflict.first()
+

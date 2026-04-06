@@ -1,10 +1,61 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    const courseSelect = document.getElementById('courseSelect');
-    if (courseSelect) {
-        courseSelect.addEventListener('change', function () {
-            const courseId = this.value;
-            window.location.href = '/register-course?course_id=' + courseId;
+    const courseSelectElement = document.getElementById('courseSelect');
+
+    if (courseSelectElement) {
+        const control = new TomSelect("#courseSelect", {
+            create: false,
+            placeholder: "Tìm tên hoặc mã môn học...",
+            openOnFocus: true,
+
+            searchField: ['text', 'code'],
+            sortField: { field: "text", direction: "asc" },
+
+            render: {
+                option: function(data, escape) {
+
+                    const code = data.code || '';
+                    return `<div class="py-1 px-2">
+                                <div class="fw-medium text-dark">${escape(data.text)}</div>
+                                <div class="text-muted small">Mã: ${escape(code)}</div>
+                            </div>`;
+                },
+                item: function(data, escape) {
+                    const code = data.code || '';
+                    return `<div>${escape(data.text)}</div>`;
+                }
+            }
+        });
+
+        let isClearing = false;
+
+        control.on('focus', function() {
+            isClearing = true;
+            control.setValue('');
+            isClearing = false;
+        });
+
+        control.on('change', function(value) {
+            if (isClearing) return;
+            const currentUrl = new URL(window.location.href);
+            if (value) {
+                if (currentUrl.searchParams.get('course_id') !== value) {
+                    currentUrl.searchParams.set('course_id', value);
+                    window.location.href = currentUrl.toString();
+                }
+            } else {
+                currentUrl.searchParams.delete('course_id');
+                window.location.href = currentUrl.pathname;
+            }
+        });
+
+        control.on('dropdown_open', function() {
+            control.clearSearch();
+
+            setTimeout(() => {
+                const searchInput = control.dropdown.querySelector('input[type="text"]');
+                if (searchInput) searchInput.value = '';
+            }, 0);
         });
     }
 
@@ -102,3 +153,5 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+
+
