@@ -116,9 +116,9 @@ document.addEventListener('DOMContentLoaded', function () {
     if (confirmBtn) {
         confirmBtn.addEventListener('click', async () => {
             try {
-                const res = await fetch('/api/register-course/confirm', { method: 'POST' });
+                const res = await fetch('/api/register-course/confirm', { method: 'POST'});
                 const data = await res.json();
-                alert(data.success ? "Success: " + data.message : "Failure: " + data.message);
+                alert(data.success ? "Thành công: " + data.message : "Thất bại: " + data.message);
 
                 if (data.success) {
                     window.location.reload();

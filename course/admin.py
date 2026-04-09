@@ -4,13 +4,12 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import InlineModelFormList, QuerySelectMultipleField
 from flask_admin.form import DatePickerWidget
 from flask_login import current_user
-from sqlalchemy import Null, null
 from werkzeug.utils import redirect
 from wtforms.fields.datetime import DateField
 from wtforms.validators import ValidationError
 
 import course.utils
-from course import app, db, dao
+from course import app, db, dao, utils
 from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig, Registration, Semester, \
     ScheduleSlot, CourseClassSchedule
 
@@ -49,26 +48,23 @@ class UserAdmin(AdminAccessMixin, ModelView):
 class StudentAdmin(AdminAccessMixin, ModelView):
 
     form_excluded_columns = ['registrations','created_date','user','active']
+
     column_labels = {
         'mssv': 'Mã số sinh viên',
         'full_name': 'Họ tên',
     }
-    # def after_model_change(self, form, model, is_created):
-    #     if is_created:
-    #         user = dao.add_user_student(student_id=model.id)
-    #         model.user_id = user.id
-    #         self.session.commit()
-    def after_model_change(self, form, model, is_created):
-        print(">>> after_model_change chạy")
-        print("Student ID:", model.id)
 
-        if is_created:
-            user = course.utils.add_user_student(student_id=model.id)
-
-            print("User:", user)
-
-            model.user_id = user.id
-            db.session.commit()
+    def create_model(self, form):
+        try:
+            utils.add_student_with_user(
+                mssv=form.mssv.data,
+                full_name=form.full_name.data,
+                email=form.email.data
+            )
+            return True
+        except Exception as e:
+            print("Error:", e)
+            return False
 
 
 class CourseAdmin(AdminAccessMixin, ModelView):
@@ -82,13 +78,13 @@ class CourseAdmin(AdminAccessMixin, ModelView):
 
 
 class CourseClassAdmin(AdminAccessMixin, ModelView):
-    # --- 1. Cấu hình Giao diện (UI) ---
     column_list = (
         'class_code',
         'course',
         'room',
         'max_students',
-        'schedule_associations'
+        'schedule_associations',
+        'semester'
     )
 
     column_labels = {
@@ -132,7 +128,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
 
 
     column_searchable_list = ['class_code']
-    column_filters = ['room.name', 'course.course_name']
+    column_filters = ['room.name', 'course.course_name', 'semester']
 
     def on_model_change(self, form, model, is_created):
 
@@ -144,7 +140,6 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
 
         slot_ids = [s.id for s in selected_slots]
         room_id = room.id
-
         current_class_id = model.id if not is_created else None
 
         conflict = dao.check_schedule_conflict(
@@ -155,20 +150,27 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         )
 
         if conflict:
+            other_class = conflict.class_code
 
-            other_class = conflict.course_class.class_code
+            conflicting_slot = None
+            for assoc in conflict.schedule_associations:
+                if assoc.slot.id in slot_ids:
+                    conflicting_slot = assoc.slot
+                    break
 
-            conflicting_slot = conflict.slot
-            time_info = f"{conflicting_slot.weekday.value} ({conflicting_slot.session.value})"
+            if conflicting_slot:
+                time_info = f"{conflicting_slot.weekday.value} ({conflicting_slot.session.label})"
+            else:
+                time_info = "không xác định"
+
             raise ValidationError(
                 f"Trùng lịch: Phòng {room.name} đã được sử dụng bởi lớp '{other_class}' "
-                f"vào buổi {time_info}. Vui lòng kiểm tra lại!"
+                f"vào {time_info}. Vui lòng kiểm tra lại!"
             )
 
         model.schedule_associations = [
             CourseClassSchedule(slot=s) for s in selected_slots
         ]
-
     def on_model_delete(self, model):
 
         count = db.session.query(Registration).filter_by(course_class_id=model.id).count()
@@ -186,19 +188,24 @@ class RegistrationAdmin(AdminAccessMixin, ModelView):
 
 
 class SemesterAdmin(AdminAccessMixin, ModelView):
-    column_list = ('id', 'name', 'year', 'start_date', 'registration_deadline')
+    column_list = ('id', 'name', 'year', 'start_date', 'start_registration_date', 'end_registration_date','end_date')
 
     column_searchable_list = ('name', 'year')
 
-    column_sortable_list = ('id', 'name', 'year', 'start_date', 'registration_deadline')
+    column_sortable_list = ('id', 'name', 'year')
 
     form_overrides = {
         'start_date': DateField,
-        'registration_deadline': DateField
+        'start_registration_date': DateField,
+        'registration_deadline': DateField,
+        'end_registration_date': DateField,
+        'end_date': DateField
     }
     form_args = {
         'start_date': {'widget': DatePickerWidget()},
-        'registration_deadline': {'widget': DatePickerWidget()}
+        'start_registration_date': {'widget': DatePickerWidget()},
+        'end_registration_date': {'widget': DatePickerWidget()},
+        'end_date': {'widget': DatePickerWidget()}
     }
 
     form_excluded_columns = ('created_date', 'registrations')

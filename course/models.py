@@ -52,7 +52,6 @@ class Base(db.Model):
 
 
 
-
 class User(Base, UserMixin):
     __tablename__ = "users"
 
@@ -115,7 +114,7 @@ class CourseClass(Base):
     course_id = Column(Integer, ForeignKey("courses.id"))
     room_id = Column(Integer, ForeignKey("rooms.id"))
     max_students = Column(Integer)
-    # thêm để biết lớp học phần thuộc học kỳ nào
+
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=False)
 
     schedule_associations = relationship(
@@ -144,10 +143,8 @@ class ScheduleSlot(Base): #ca học
 
 class Room(Base):
     __tablename__ = "rooms"
-
     name = Column(String(50), unique=True, nullable=False)
     capacity = Column(Integer, nullable=False)
-
 
 
 class Semester(Base):
@@ -156,9 +153,10 @@ class Semester(Base):
     name = Column(String(50))
     year = Column(Integer)
     start_date = Column(db.Date)
-    # thêm để dễ kt
+    end_date = Column(db.Date)
+
     start_registration_date = Column(db.Date)
-    registration_deadline = Column(db.Date)
+    end_registration_date = Column(db.Date)
 
     registrations = relationship("Registration", backref="semester")
 
