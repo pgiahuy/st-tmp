@@ -1,0 +1,8 @@
+{
+  "class_schedules": [
+    { "course_class_id": 1, "slot_id": 1 },
+    { "course_class_id": 2, "slot_id": 2 },
+    { "course_class_id": 3, "slot_id": 3 },
+    { "course_class_id": 4, "slot_id": 4 }
+  ]
+}
