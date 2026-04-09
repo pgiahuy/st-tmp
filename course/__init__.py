@@ -7,14 +7,14 @@ from flask_login import LoginManager
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
 app.secret_key = 'isufheoihfeuheiohmioanwn'
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:root@localhost/coursedb?charset=utf8mb4"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://root:2351050130@localhost/coursedb?charset=utf8mb4"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 app.config["MAX"] = True
 app.config["DEFAULT_PASSWORD"] = "Abc1234@"
 db = SQLAlchemy(app=app)
 login = LoginManager(app=app)
 
-from course import admin
+# from course import admin
 
 
 cloudinary.config(

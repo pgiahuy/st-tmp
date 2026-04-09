@@ -1,0 +1,14 @@
+{
+  "slots": [
+    { "weekday": "MONDAY", "session": "MORNING" },
+    { "weekday": "MONDAY", "session": "AFTERNOON" },
+    { "weekday": "TUESDAY", "session": "MORNING" },
+    { "weekday": "TUESDAY", "session": "AFTERNOON" },
+    { "weekday": "WEDNESDAY", "session": "MORNING" },
+    { "weekday": "WEDNESDAY", "session": "AFTERNOON" },
+    { "weekday": "THURSDAY", "session": "MORNING" },
+    { "weekday": "THURSDAY", "session": "AFTERNOON" },
+    { "weekday": "FRIDAY", "session": "MORNING" },
+    { "weekday": "FRIDAY", "session": "AFTERNOON" }
+  ]
+}

@@ -16,7 +16,6 @@ def register_course():
     if not student:
         return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
     student_id = student.id
-
     course_class_id = int(data['course_class_id'])
 
     print("student_id:", student_id)

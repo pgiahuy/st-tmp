@@ -36,27 +36,16 @@ def login_my_user():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         role = request.form.get('role')
+        try:
+            user = dao.auth_user(username, password, session=db.session, role=role)
+            if user:
+                login_user(user)
+                return redirect('/' if user.role == UserRole.USER else '/admin')
 
-        if not username or not password:
-            err_msg = "Vui lòng nhập đầy đủ tài khoản và mật khẩu!"
-            return render_template('login.html', err_msg=err_msg, roles=UserRole)
-
-        if not role:
-            err_msg = "Vui lòng chọn vai trò!"
-            return render_template('login.html', err_msg=err_msg, roles=UserRole)
-
-        if role == "USER":
-            if not re.fullmatch(r"\d{10}", username):
-                err_msg = "Mã số sinh viên phải là 10 chữ số!"
-                return render_template('login.html', err_msg=err_msg, roles=UserRole)
-
-        user = dao.auth_user(username, password, session=db.session, role=role)
-
-        if user is None:
-            err_msg = "Sai tài khoản hoặc mật khẩu!"
-        else:
-            login_user(user)
-            return redirect("/" if user.role == UserRole.USER else "/admin")
+            else:
+                err_msg = 'Sai username hoặc password!'
+        except Exception as e:
+            err_msg = str(e)
 
     return render_template('login.html',
                            err_msg=err_msg,
@@ -64,9 +53,6 @@ def login_my_user():
                            old_username=username,
                            old_role=role
                            )
-
-
-
 
 
 
@@ -123,32 +109,42 @@ def change_password():
         success_msg=success_msg
     )
 
-
 @app.route('/register-course')
 @login_required
 def register_course_page():
+    # 1. Lấy đúng học kỳ đang mở đăng ký
+    reg_semester = dao.get_registration_semester()
+    if not reg_semester:
+        return render_template('register_course.html', error="Hiện không trong thời gian đăng ký học phần.")
 
     kw = request.args.get('kw')
     course_id = request.args.get('course_id')
 
+    # 2. Lấy thông tin sinh viên
     student = dao.get_student_by_mssv(current_user.username)
 
-    course_classes = dao.get_course_classes(course_id=course_id, kw=kw)
-    course_classes_in_semester = dao.get_course_classes()
+    # 3. Lấy dữ liệu hiển thị (Đã lọc theo reg_semester bên trong DAO)
+    course_classes = dao.get_course_classes_in_reg_semester(course_id=course_id, kw=kw)
+    courses = dao.get_courses_by_current_reg_semester()
 
-
+    # 4. Lấy ID các lớp ĐÃ ĐĂNG KÝ trong học kỳ này
     registered_ids = [reg.course_class_id for reg in student.registrations
-                      if reg.semester_id == dao.get_current_semester().id]
+                      if reg.semester_id == reg_semester.id]
+
+    # 5. Lấy danh sách lớp để hiển thị bảng "Các môn đã đăng ký"
+    # Sửa lại hàm này trong DAO để nhận thêm ID học kỳ
+    student_classes = [reg.course_class for reg in student.registrations
+                       if reg.semester_id == reg_semester.id]
 
     return render_template(
         'register_course.html',
-        course_classes_in_semester = course_classes_in_semester,
+        courses_in_reg_semester=courses,
         selected_course_id=course_id,
-        course_classes=course_classes,
+        course_classes_in_reg_semester=course_classes,
         registered_ids=registered_ids,
-        student_classes=dao.get_course_classes_for_student(student.id)
+        student_classes=student_classes,
+        registration_semester=reg_semester
     )
-
 
 @app.route('/timetable')
 @login_required

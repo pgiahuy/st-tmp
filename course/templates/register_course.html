@@ -11,13 +11,13 @@
 
             <div class="col-md-4" id="courseBox">
                 <label class="form-label fw-semibold">Chọn môn</label>
-                <select name="course_id" id="courseSelect" class="form-select" placeholder="Tìm tên hoặc mã môn học...">
+                <select name="course_id" id="courseSelect" class="form-select" >
                     <option value="">-- Tất cả --</option>
-                    {% for course in course_classes_in_semester %}
-                    <option value="{{ course.course.id }}"
-                            data-code="{{ course.course.course_code }}"
-                            {% if selected_course_id== course.course.id|string %}selected{% endif %}>
-                        {{ course.course.course_name }}
+                    {% for c in courses_in_reg_semester %}
+                    <option value="{{ c.id }}"
+                            data-code="{{ c.course_code }}"
+                            {% if selected_course_id== c.id|string %}selected{% endif %}>
+                        {{ c.course_name }}
                     </option>
                     {% endfor %}
                 </select>
@@ -50,9 +50,10 @@
             <th>Đăng ký</th>
         </tr>
         </thead>
+
         <tbody>
-        {% for c in course_classes %}
-        <tr class="text-center {% if c.is_full %}table-secondary{% endif %}">
+        {% for c in course_classes_in_reg_semester %}
+        <tr class="text-center">
             <td>{{ c.class_code }}</td>
             <td class="text-start ms-5">{{ c.course.course_name }}</td>
             <td>{{ c.course.credits }}</td>
@@ -61,16 +62,14 @@
                 {{ s.slot.weekday.value }} - {{ s.slot.session.value }}<br>
                 {% endfor %}
             </td>
-            <td>{{c.room}}</td>
+            <td>{{ c.room.name }}</td>
             <td>
-                <span style="color: blue;">{{ c.registrations|length }}</span> / <span style="color: black;">{{ c.max_students }}</span>
+                <span style="color: blue;">{{ c.registrations|length }}</span> / {{ c.max_students }}
             </td>
             <td>
-                <input type="checkbox"
-                       class="form-check-input register-checkbox"
+                <input type="checkbox" class="form-check-input register-checkbox"
                        data-class-id="{{ c.id }}"
-                       {% if c.id in registered_ids %}checked{% endif %}
-                       {% if c.is_full %}disabled title="Lớp đã đầy" {% endif %}>
+                       {% if c.id in registered_ids %}checked{% endif %}>
             </td>
         </tr>
         {% endfor %}
