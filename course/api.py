@@ -5,8 +5,6 @@ from course import dao, app
 
 
 
-
-
 @app.route('/api/course-register', methods=['POST'])
 @login_required
 def register_course():
@@ -61,6 +59,8 @@ def confirm_register():
             "success": False,
             "message": str(e)
         }), 400
+
+
 
 @app.route('/api/course-register/<int:course_class_id>', methods=['DELETE'])
 @login_required
