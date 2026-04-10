@@ -7,37 +7,24 @@ from flask_login import logout_user, login_user, current_user, login_required, l
 from course.models import UserRole, Day, Session
 
 
+
 @app.route('/')
 def index():
     print(current_user)
     return render_template('index.html')
 
-# @app.route('/admin/login', methods=['GET', 'POST'])
-# def admin_login():
-#     if request.method == 'POST':
-#         username = request.form.get('username')
-#         password = request.form.get('password')
-#         user = dao.auth_user(username=username, password=password ,session=db.session)
-#         if user and user.role == UserRole.ADMIN:
-#             login_user(user)
-#             return redirect('/admin')
-#         return render_template('admin/login.html', err_msg='Sai tài khoản hoặc không phải admin!')
-#     return render_template('admin/login.html')
 
-import re
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_my_user():
     err_msg = None
     username = None
-    role = None
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
-        role = request.form.get('role')
         try:
-            user = dao.auth_user(username, password, session=db.session, role=role)
+            user = dao.auth_user(username, password, session=db.session)
             if user:
                 login_user(user)
                 return redirect('/' if user.role == UserRole.USER else '/admin')
@@ -49,9 +36,7 @@ def login_my_user():
 
     return render_template('login.html',
                            err_msg=err_msg,
-                           roles=UserRole,
                            old_username=username,
-                           old_role=role
                            )
 
 
@@ -66,8 +51,10 @@ def logout_my_user():
 @app.route('/userinfo')
 @login_required
 def my_profile():
-    student = dao.get_student_by_mssv(current_user.student.mssv)
-    student_classes = dao.get_course_classes_for_student(student.id)
+    reg_semester = dao.get_registration_semester()
+    student = dao.get_student_by_mssv(current_user.username)
+    student_classes = [reg.course_class for reg in student.registrations
+                       if reg.semester_id == reg_semester.id]
     return render_template('profile.html',
                            student=student,
                            student_classes=student_classes)
@@ -112,7 +99,7 @@ def change_password():
 @app.route('/register-course')
 @login_required
 def register_course_page():
-    # 1. Lấy đúng học kỳ đang mở đăng ký
+
     reg_semester = dao.get_registration_semester()
     if not reg_semester:
         return render_template('register_course.html', error="Hiện không trong thời gian đăng ký học phần.")
@@ -120,19 +107,15 @@ def register_course_page():
     kw = request.args.get('kw')
     course_id = request.args.get('course_id')
 
-    # 2. Lấy thông tin sinh viên
     student = dao.get_student_by_mssv(current_user.username)
 
-    # 3. Lấy dữ liệu hiển thị (Đã lọc theo reg_semester bên trong DAO)
     course_classes = dao.get_course_classes_in_reg_semester(course_id=course_id, kw=kw)
     courses = dao.get_courses_by_current_reg_semester()
 
-    # 4. Lấy ID các lớp ĐÃ ĐĂNG KÝ trong học kỳ này
     registered_ids = [reg.course_class_id for reg in student.registrations
                       if reg.semester_id == reg_semester.id]
 
-    # 5. Lấy danh sách lớp để hiển thị bảng "Các môn đã đăng ký"
-    # Sửa lại hàm này trong DAO để nhận thêm ID học kỳ
+
     student_classes = [reg.course_class for reg in student.registrations
                        if reg.semester_id == reg_semester.id]
 
@@ -149,11 +132,16 @@ def register_course_page():
 @app.route('/timetable')
 @login_required
 def timetable_page():
-    current_semester = dao.get_current_semester()
-    semester_name = f"{current_semester.name} - {current_semester.year}"
+    reg_semester = dao.get_registration_semester()
     student = dao.get_student_by_mssv(current_user.username)
+    student_classes = [reg.course_class for reg in student.registrations
+                       if reg.semester_id == reg_semester.id]
 
-    student_classes = dao.get_course_classes_for_student(student.id)
+
+    semester_name = f"{reg_semester.name} - {reg_semester.year}"
+
+
+
 
     days = [
         {"name": "Thứ 2", "value": Day.MONDAY},

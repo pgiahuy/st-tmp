@@ -1,8 +1,59 @@
 {
   "class_schedules": [
     { "course_class_id": 1, "slot_id": 1 },
+    { "course_class_id": 1, "slot_id": 3 },
+
     { "course_class_id": 2, "slot_id": 2 },
+
     { "course_class_id": 3, "slot_id": 3 },
-    { "course_class_id": 4, "slot_id": 4 }
+    { "course_class_id": 3, "slot_id": 5 },
+
+    { "course_class_id": 4, "slot_id": 4 },
+    { "course_class_id": 4, "slot_id": 6 },
+
+    { "course_class_id": 5, "slot_id": 5 },
+
+    { "course_class_id": 6, "slot_id": 6 },
+    { "course_class_id": 6, "slot_id": 8 },
+
+    { "course_class_id": 7, "slot_id": 7 },
+    { "course_class_id": 7, "slot_id": 9 },
+
+    { "course_class_id": 8, "slot_id": 8 },
+
+    { "course_class_id": 9, "slot_id": 1 },
+    { "course_class_id": 9, "slot_id": 6 },
+
+    { "course_class_id": 10, "slot_id": 2 },
+    { "course_class_id": 10, "slot_id": 7 },
+
+    { "course_class_id": 11, "slot_id": 8 },
+
+    { "course_class_id": 12, "slot_id": 4 },
+    { "course_class_id": 12, "slot_id": 9 },
+
+    { "course_class_id": 13, "slot_id": 5 },
+
+    { "course_class_id": 14, "slot_id": 1 },
+
+    { "course_class_id": 15, "slot_id": 7 },
+    { "course_class_id": 16, "slot_id": 8 },
+    { "course_class_id": 16, "slot_id": 3 },
+
+    { "course_class_id": 17, "slot_id": 4 },
+
+    { "course_class_id": 18, "slot_id": 10 },
+    { "course_class_id": 18, "slot_id": 5 },
+
+    { "course_class_id": 19, "slot_id": 1 },
+
+    { "course_class_id": 20, "slot_id": 2 },
+    { "course_class_id": 20, "slot_id": 9 },
+
+    { "course_class_id": 21, "slot_id": 10 },
+
+    { "course_class_id": 22, "slot_id": 5 },
+    { "course_class_id": 23, "slot_id": 6 },
+    { "course_class_id": 24, "slot_id": 9 }
   ]
 }

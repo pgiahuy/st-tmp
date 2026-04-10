@@ -4,15 +4,17 @@
       "name": "Học kỳ 2",
       "year": 2025,
       "start_date": "2026-01-15",
+      "end_date": "2026-05-30",
       "start_registration_date": "2025-12-01",
-      "registration_deadline": "2025-12-20"
+      "end_registration_date": "2025-12-20"
     },
     {
       "name": "Học kỳ 1",
       "year": 2026,
       "start_date": "2026-08-15",
+      "end_date": "2026-12-30",
       "start_registration_date": "2026-04-01",
-      "registration_deadline": "2026-06-30"
+      "end_registration_date": "2026-06-30"
     }
   ]
 }

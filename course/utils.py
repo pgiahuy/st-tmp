@@ -19,29 +19,33 @@ def add_course_class(class_code, course_id, room_id, max_students):
         db.session.rollback()
         print(f"Lớp {class_code} đã tồn tại hoặc lỗi khóa ngoại!")
 
-
-def add_user_student(student_id = None, password = None):
-
-    student = db.session.query(Student).filter_by(id=student_id).first()
-    if not student:
-        raise Exception("Sinh viên không tồn tại!")
-
-    if not password:
-        password = app.config.get("DEFAULT_PASSWORD")
-
-    user = User(username=student.mssv, password=hash_password(password), student=student)
-    db.session.add(user)
-    return user
-
-
-def add_student(mssv,full_name, email):
-    student = Student(mssv=mssv, full_name=full_name, email=email)
-    db.session.add(student)
+def add_student_with_user(mssv, full_name, email, password=None):
     try:
+        student = Student(
+            mssv=mssv,
+            full_name=full_name,
+            email=email
+        )
+        db.session.add(student)
+        db.session.flush()
+
+        if not password:
+            password = app.config.get("DEFAULT_PASSWORD")
+
+        user = User(
+            username=student.mssv,
+            password=hash_password(password),
+            student=student
+        )
+        db.session.add(user)
+
         db.session.commit()
+
+        return student
+
     except IntegrityError:
         db.session.rollback()
-        raise Exception('Sinh viên đã tồn tại!')
+        raise Exception("Sinh viên hoặc user đã tồn tại!")
 
 
 def add_course(course_code, course_name, credits):
@@ -52,14 +56,25 @@ def add_course(course_code, course_name, credits):
     except IntegrityError:
         db.session.rollback()
 
-def add_semester(name, year, start_date, registration_deadline):
-    sem = Semester(name=name, year=year,start_date= start_date,registration_deadline= registration_deadline)
+def add_semester(name, year, start_date, end_date,
+                 start_registration_date, end_registration_date):
+
+    sem = Semester(
+        name=name,
+        year=year,
+        start_date=start_date,
+        end_date=end_date,
+        start_registration_date=start_registration_date,
+        end_registration_date=end_registration_date
+    )
+
     db.session.add(sem)
-    db.session.add(sem)
+
     try:
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
+        print("Lỗi khi thêm semester!")
 
 def add_room(name, capacity):
     room = Room(name=name, capacity=capacity)

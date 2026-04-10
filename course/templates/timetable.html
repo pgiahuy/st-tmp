@@ -2,6 +2,7 @@
 {% block title %}Thời khóa biểu{% endblock %}
 
 {% block content %}
+{% set day_map = {'Mon': 'Thứ 2', 'Tue': 'Thứ 3', 'Wed': 'Thứ 4', 'Thu': 'Thứ 5', 'Fri': 'Thứ 6', 'Sat': 'Thứ 7'} %}
 <div style="width:80%; margin:0 auto;">
 <h3 class="mb-4 fw-bold mt-3">THỜI KHÓA BIỂU HỌC KỲ</h3>
 
@@ -26,25 +27,25 @@
                     {% for day in days %}
                     <td style="min-height: 140px; vertical-align: top; padding: 10px; position: relative;">
 
-                        {% set slot_found = false %}
+                        {% set ns = namespace(found=false) %}
 
                         {% for c in student_classes %}
-                            {% for slot in c.schedule_slots %}
-                                {% if slot.weekday == day.value and slot.session == session.value and not slot_found %}
-                                    <div class="timetable-slot p-3 rounded shadow-sm text-start"
+                            {% for assoc in c.schedule_associations %}
+                                {% set slot = assoc.slot %}
+                                {% if slot.weekday == day.value and slot.session == session.value %}
+                                    <div class="timetable-slot p-3 rounded shadow-sm text-start mb-2"
                                          style="background-color: #e3f2fd; border-left: 7px solid #1976d2;">
-                                        <div class="fw-semibold">{{ c.course.course_code }} - {{ c.course.course_name|truncate(38) }}</div>
-                                        <small class="d-block">Lớp: {{ c.class_code }}</small>
-                                        <small class="d-block">Phòng: {{ c.room.name if c.room else '—' }}</small>
+                                        <div class="fw-semibold">
+                                            {{ c.course.course_code }} - {{ c.course.course_name|truncate(38) }}
+                                        </div>
+                                        <small>Lớp: {{ c.class_code }}</small><br>
+                                        <small>Phòng: {{ c.room.name if c.room else '—' }}</small>
                                     </div>
-                                    {% set slot_found = true %}
+                                    {% set ns.found = true %}
                                 {% endif %}
                             {% endfor %}
                         {% endfor %}
 
-                        {% if not slot_found %}
-
-                        {% endif %}
                     </td>
                     {% endfor %}
                 </tr>
@@ -72,8 +73,9 @@
         <td class="text-start">{{ c.course.course_name }}</td>
         <td class="text-center">{{ c.course.credits }}</td>
         <td>
-            {% for slot in c.schedule_slots %}
-                {{ slot.weekday.value }} - {{ slot.session.value }}<br>
+            {% for assoc in c.schedule_associations %}
+                {% set slot = assoc.slot %}
+                {{ day_map[slot.weekday.value] }} - {{ slot.session.label }}<br>
             {% endfor %}
         </td>
         <td>{{ c.room.name if c.room else '—' }}</td>
