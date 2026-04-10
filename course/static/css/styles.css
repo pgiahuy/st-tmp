@@ -85,3 +85,16 @@ footer {
 .ts-control.ts-dropdown-active .ts-item {
     display: none;
 }
+
+
+.table-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.table-container thead th {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 2;
+}

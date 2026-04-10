@@ -1,5 +1,5 @@
 {
-  "classes": [
+  "course_classes": [
     { "class_code": "ITEC1505-L01", "course_id": 1, "room_id": 1, "max_students": 40, "semester_id": 2 },
     { "class_code": "ITEC1505-L02", "course_id": 1, "room_id": 2, "max_students": 40, "semester_id": 2 },
     { "class_code": "ITEC1401-L01", "course_id": 2, "room_id": 1, "max_students": 45, "semester_id": 2 },
