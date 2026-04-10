@@ -141,6 +141,8 @@ class ScheduleSlot(Base): #ca học
     class_associations = relationship("CourseClassSchedule", back_populates="slot")
 
 
+
+
 class Room(Base):
     __tablename__ = "rooms"
     name = Column(String(50), unique=True, nullable=False)

@@ -37,6 +37,8 @@ class UserAdmin(AdminAccessMixin, ModelView):
         if is_created:
             model.password = dao.hash_password(model.password)
 
+
+
 class StudentAdmin(AdminAccessMixin, ModelView):
 
     form_excluded_columns = ['registrations','created_date','user','active']
@@ -44,11 +46,21 @@ class StudentAdmin(AdminAccessMixin, ModelView):
         'mssv': 'Mã số sinh viên',
         'full_name': 'Họ tên',
     }
+    # def after_model_change(self, form, model, is_created):
+    #     if is_created:
+    #         user = dao.add_user_student(student_id=model.id)
+    #         model.user_id = user.id
+    #         self.session.commit()
     def after_model_change(self, form, model, is_created):
+        print(">>> after_model_change chạy")
+        print("Student ID:", model.id)
+
         if is_created:
             user = dao.add_user_student(student_id=model.id)
+            print("User:", user)
+
             model.user_id = user.id
-            self.session.commit()
+            db.session.commit()
 
 
 class CourseAdmin(AdminAccessMixin, ModelView):

@@ -195,7 +195,6 @@ def get_registration_semester():
 
 
 
-
 def get_total_credits(student, semester_id):
     total = 0
     for reg in student.registrations:
