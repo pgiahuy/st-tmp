@@ -1,22 +1,18 @@
 {
   "semesters": [
     {
-      "name": "HK1",
+      "name": "Học kỳ 2",
       "year": 2025,
-      "start_date": "2025-02-01",
-      "registration_deadline": "2025-01-20"
+      "start_date": "2026-01-15",
+      "start_registration_date": "2025-12-01",
+      "registration_deadline": "2025-12-20"
     },
     {
-      "name": "HK2",
-      "year": 2025,
-      "start_date": "2025-06-01",
-      "registration_deadline": "2025-05-20"
-    },
-    {
-      "name": "HK3",
-      "year": 2025,
-      "start_date": "2025-10-01",
-      "registration_deadline": "2025-09-20"
+      "name": "Học kỳ 1",
+      "year": 2026,
+      "start_date": "2026-08-15",
+      "start_registration_date": "2026-04-01",
+      "registration_deadline": "2026-06-30"
     }
   ]
 }

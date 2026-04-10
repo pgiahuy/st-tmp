@@ -2,44 +2,24 @@
   "courses": [
     { "course_code": "ITEC1505", "course_name": "Cơ sở lập trình", "credits": 4 },
     { "course_code": "ITEC1401", "course_name": "Nhập môn tin học", "credits": 3 },
-
     { "course_code": "ITEC1310", "course_name": "Hệ điều hành và kiến trúc máy tính", "credits": 3 },
     { "course_code": "ITEC1504", "course_name": "Kỹ thuật lập trình", "credits": 4 },
-
-
     { "course_code": "ITEC1406", "course_name": "Thiết kế Web", "credits": 3 },
     { "course_code": "MISY2501", "course_name": "Cấu trúc dữ liệu và giải thuật", "credits": 4 },
     { "course_code": "MATH2402", "course_name": "Toán rời rạc", "credits": 4 },
-
-
     { "course_code": "ITEC2502", "course_name": "Cơ sở dữ liệu", "credits": 4},
     { "course_code": "ITEC2503", "course_name": "Mạng máy tính", "credits": 4 },
-
     { "course_code": "ITEC2504", "course_name": "Lập trình hướng đối tượng", "credits": 4 },
     { "course_code": "ITEC2401", "course_name": "Lập trình giao diện", "credits": 3 },
-
-
-
     { "course_code": "ITEC4409", "course_name": "Công nghệ phần mềm", "credits": 3 },
-
     { "course_code": "ITEC3401", "course_name": "Phân tích thiết kế hệ thống", "credits": 4 },
     { "course_code": "ITEC4410", "course_name": "Công nghệ mã nguồn mở", "credits": 3 },
-
-
     { "course_code": "MATH1314", "course_name": "Giải tích", "credits": 3 },
-
-    { "course_code": "ITEC4409", "course_name": "Công nghệ phần mềm", "credits": 3 },
-    { "course_code": "ITEC3412", "course_name": "An toàn hệ thống thông tin ", "credits": 3 },
+    { "course_code": "ITEC3412", "course_name": "An toàn hệ thống thông tin", "credits": 3 },
     { "course_code": "ITEC4402", "course_name": "Quản trị hệ cơ sở dữ liệu", "credits": 3 },
-
-
     { "course_code": "ITEC3201", "course_name": "Kỹ năng nghề nghiệp", "credits": 2 },
-
     { "course_code": "ITEC4403", "course_name": "Quản trị mạng", "credits": 3 },
-
     { "course_code": "ITEC4415", "course_name": "Kiểm thử phần mềm", "credits": 3 },
-
-
     { "course_code": "GLAW1315", "course_name": "Pháp luật đại cương", "credits": 3 },
     { "course_code": "ITEC4416", "course_name": "Điện toán đám mây", "credits": 3 },
     { "course_code": "ITEC3417", "course_name": "Khai phá dữ liệu", "credits": 3 },

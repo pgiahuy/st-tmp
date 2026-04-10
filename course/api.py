@@ -4,7 +4,8 @@ from flask_login import login_required, current_user
 from course import dao, app
 
 
-@app.route('/test_api/course-register', methods=['POST'])
+
+@app.route('/api/course-register', methods=['POST'])
 @login_required
 def register_course():
     data = request.get_json()
@@ -38,8 +39,9 @@ def register_course():
 @app.route('/api/register-course/confirm', methods=['POST'])
 @login_required
 def confirm_register():
-
-    student = dao.get_student_by_mssv(current_user.username)
+    data = request.get_json()
+    mssv = current_user.username
+    student = dao.get_student_by_mssv(mssv)
     if not student:
         return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
     student_id = student.id
@@ -59,7 +61,8 @@ def confirm_register():
         }), 400
 
 
-@app.route('/test_api/course-register/<int:course_class_id>', methods=['DELETE'])
+
+@app.route('/api/course-register/<int:course_class_id>', methods=['DELETE'])
 @login_required
 def unregister_course_route(course_class_id):
     mssv = current_user.username

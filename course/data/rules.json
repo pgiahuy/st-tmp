@@ -3,22 +3,26 @@
     {
       "name": "Số tín chỉ tối đa",
       "key": "MAX_CREDITS",
-      "value": "25"
+      "value": "25",
+      "description": "Giới hạn tín chỉ tối đa sinh viên được đăng ký trong một học kỳ"
     },
     {
       "name": "Số tín chỉ tối thiểu",
       "key": "MIN_CREDITS",
-      "value": "12"
+      "value": "12",
+      "description": "Số tín chỉ tối thiểu để đủ điều kiện xuất phiếu đăng ký"
     },
     {
       "name": "Số sinh viên tối đa mỗi lớp",
       "key": "MAX_STUDENTS_PER_CLASS",
-      "value": "50"
+      "value": "50",
+      "description": "Sĩ số mặc định khi tạo lớp học phần mới"
     },
     {
       "name": "Hạn hủy đăng ký (ngày)",
       "key": "CANCEL_DEADLINE_DAYS",
-      "value": "14"
+      "value": "14",
+      "description": "Số ngày cho phép hủy môn tính từ ngày bắt đầu học kỳ"
     }
   ]
 }
