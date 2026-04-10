@@ -15,18 +15,10 @@
     {% endif %}
 
     <form action="" method="post">
-        <select name="role" class="form-select">
-
-            {% for role in roles %}
-            <option  value="{{ role.name }}" {% if old_role == role.name %}selected{% endif %}>
-                {{ role.label }}
-            </option>
-            {% endfor %}
-        </select>
 
         <div class="mb-3 mt-3">
             <input type="text" value="{{ old_username or '' }}" class="form-control" id="username"
-                   placeholder="Mã số sinh viên" name="username">
+                   placeholder="Tên đăng nhập" name="username">
         </div>
 
         <div class="mb-3">

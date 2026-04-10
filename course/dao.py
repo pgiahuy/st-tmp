@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from course import db,app
 from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite, \
-    CourseClassSchedule, SystemConfig, ScheduleSlot
+    CourseClassSchedule, SystemConfig, ScheduleSlot, UserRole
 
 
 def hash_password(password):
@@ -45,30 +45,28 @@ def get_course_classes_in_reg_semester(course_id=None, kw=None):
 
     return results
 
-def auth_user(username, password, role, session):
-    validate_auth(username, password, role)
+def auth_user(username, password, session):
+    validate_auth(username, password)
 
-    user = session.query(User).filter(
+    username = username.strip()
+    password = password.strip()
+
+    return session.query(User).filter(
         func.lower(User.username) == username.lower(),
         User.password == hash_password(password)
     ).first()
 
-    if user and user.role.name != role:
-        return None
 
-    return user
+def validate_auth(username, password):
 
-def validate_auth(username, password, role):
-    if not username or not username.strip():
-        raise Exception("Vui lòng nhập tên đăng nhập!")
-    if not password or not password.strip():
-        raise Exception("Vui lòng nhập mật khẩu!")
-    if not role:
-        raise Exception("Vui lòng chọn vai trò!")
+    if not isinstance(username, str) or not username.strip():
+        raise ValueError("Vui lòng nhập tên đăng nhập!")
 
-    if role == "USER":
-        if not re.fullmatch(r"\d{10}", username.strip()):
-            raise Exception("Mã số sinh viên phải là 10 chữ số!")
+    if not isinstance(password, str) or not password.strip():
+        raise ValueError("Vui lòng nhập mật khẩu!")
+
+
+
 
 
 def hash_password(password):
@@ -85,6 +83,136 @@ def get_course_class_by_id(id):
 def get_all_course_classes():
     return CourseClass.query.filter(CourseClass.active == True).all()
 
+    student_studied = []
+    for reg in student.registrations:
+        # CHỖ QUAN TRỌNG: Bỏ qua các môn của học kỳ đang đăng ký
+        if reg_semester and reg.semester_id == reg_semester.id:
+            continue
+
+        if reg.course_class and reg.course_class.course:
+            student_studied.append(reg.course_class.course.id)
+
+    return set(student_studied)
+
+
+def check_duplicate_in_semester(student_id, course_class_id):
+
+    semester = get_registration_semester()
+    if not semester:
+        raise Exception("Không tìm thấy kỳ học hiện tại")
+
+    course_id = get_course_class_by_id(course_class_id).course.id
+
+    student = get_student_by_id(student_id)
+    for reg in student.registrations:
+        if reg.semester_id != semester.id:
+            continue
+        existing_course_id = get_course_class_by_id(reg.course_class_id).course.id
+        if existing_course_id == course_id:
+            return True
+    return False
+
+
+
+# var ở đây
+# def get_conflicting_class(student_id, course_class_id):
+#
+#     new_class = CourseClass.query.get(course_class_id)
+#     current_semester = get_current_semester()
+#
+#     if not new_class or not current_semester:
+#         return None
+#
+#     student = get_student_by_id(student_id)
+#     registered_classes = [
+#         reg.course_class for reg in student.registrations
+#         if reg.semester_id == current_semester.id
+#     ]
+#
+#     new_slots = {
+#         (assoc.slot.weekday, assoc.slot.session)
+#         for assoc in new_class.schedule_associations if assoc.slot
+#     }
+#
+#     for old_class in registered_classes:
+#         old_slots = {
+#             (assoc.slot.weekday, assoc.slot.session)
+#             for assoc in old_class.schedule_associations if assoc.slot
+#         }
+#
+#         if new_slots.intersection(old_slots):
+#             return old_class
+#
+#     return None
+
+
+def get_conflicting_class(student_id, course_class_id, reg_semester_id):
+    # 1. Lấy thông tin lớp mới và các slot lịch học của nó
+    new_class = CourseClass.query.get(course_class_id)
+    if not new_class or not reg_semester_id:
+        return None
+
+    # Tạo Set các cặp (Thứ, Ca) của lớp mới
+    new_slots = {
+        (assoc.slot.weekday, assoc.slot.session)
+        for assoc in new_class.schedule_associations if assoc.slot
+    }
+
+    # 2. Truy vấn trực tiếp các lớp ĐÃ ĐĂNG KÝ trong học kỳ đang xét
+    # Tối ưu: Lọc ngay tại tầng Database thay vì lọc bằng Python list comprehension
+    registered_registrations = Registration.query.filter_by(
+        student_id=student_id,
+        semester_id=reg_semester_id
+    ).all()
+
+    for reg in registered_registrations:
+        old_class = reg.course_class
+
+        # Bỏ qua nếu là chính lớp đang xét (đề phòng trường hợp update)
+        if old_class.id == course_class_id:
+            continue
+
+        # Lấy Set các cặp (Thứ, Ca) của lớp đã đăng ký
+        old_slots = {
+            (assoc.slot.weekday, assoc.slot.session)
+            for assoc in old_class.schedule_associations if assoc.slot
+        }
+
+        # 3. Kiểm tra giao nhau (Conflict)
+        if new_slots.intersection(old_slots):
+            return old_class
+
+    return None
+
+
+
+
+def check_not_yet_studied(student_id, course_class_id):
+    student_studied = get_all_student_studied(student_id)
+    course = get_course_class_by_id(course_class_id).course
+
+    return course.id not in student_studied
+
+
+def check_studied_prerequisites(student_id, course_class_id):
+    course_class = get_course_class_by_id(course_class_id)
+    course = course_class.course
+
+    student_studied = get_all_student_studied(student_id)
+
+    prerequisite_list = CoursePrerequisite.query.filter_by(course_id=course.id).all()
+    prerequisite_ids = [pr.prerequisite_id for pr in prerequisite_list]
+
+    if not prerequisite_ids:
+        return True
+
+    return all(pr in student_studied for pr in prerequisite_ids)
+
+
+def course_class_is_full(course_class_id):
+    course_class = get_course_class_by_id(course_class_id)
+    count = db.session.query(Registration).filter_by(course_class_id=course_class_id).count()
+    return count >= course_class.max_students
 
 def get_courses_by_current_reg_semester():
     semester = get_registration_semester()
@@ -114,14 +242,12 @@ def register_course(student_id, course_class_id):
     if not semester:
         raise Exception("Hiện không trong thời gian đăng ký học kỳ!")
 
-
     if course_class_is_full(course_class_id):
         raise Exception(f"Lớp {course_class.class_code} đã đầy!")
 
     conflicting_class = get_conflicting_class(student_id, course_class_id, semester.id)
     if conflicting_class:
         raise Exception(f"Trùng lịch với lớp {conflicting_class.class_code}")
-
 
     if check_duplicate_in_semester(student_id, course_class_id):
         raise Exception("Bạn đã đăng ký một lớp khác của môn học này trong học kỳ này rồi!")
@@ -196,7 +322,6 @@ def get_registration_semester():
     today = datetime.now().date()
     return (Semester.query.filter(Semester.start_registration_date <= today,
                                  Semester.end_registration_date >= today).first())
-
 
 
 
