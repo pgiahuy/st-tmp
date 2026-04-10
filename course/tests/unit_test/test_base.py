@@ -23,4 +23,5 @@ def test_app():
 def test_session(test_app):
     yield db.session
     db.session.rollback()
+    db.session.close()
 
