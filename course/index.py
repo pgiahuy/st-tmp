@@ -1,58 +1,76 @@
 from flask import render_template, request, session
 from werkzeug.utils import redirect
 
-from course import app, dao, login, db
+from course import app, dao, login, db, api
 
 from flask_login import logout_user, login_user, current_user, login_required, login_required
-from course.models import UserRole
+from course.models import UserRole, Day, Session
 
 
 @app.route('/')
 def index():
+    print(current_user)
     return render_template('index.html')
 
-@app.route('/admin/login', methods=['GET', 'POST'])
-def admin_login():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+# @app.route('/admin/login', methods=['GET', 'POST'])
+# def admin_login():
+#     if request.method == 'POST':
+#         username = request.form.get('username')
+#         password = request.form.get('password')
+#         user = dao.auth_user(username=username, password=password ,session=db.session)
+#         if user and user.role == UserRole.ADMIN:
+#             login_user(user)
+#             return redirect('/admin')
+#         return render_template('admin/login.html', err_msg='Sai tài khoản hoặc không phải admin!')
+#     return render_template('admin/login.html')
 
-        user = dao.auth_user(username=username, password=password ,session=db.session)
-
-        if user and user.role == UserRole.ADMIN:
-            login_user(user)
-            return redirect('/admin')
-
-        return render_template('admin/login.html', err_msg='Sai tài khoản hoặc không phải admin!')
-
-    return render_template('admin/login.html')
+import re
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_my_user():
     err_msg = None
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = dao.auth_user(username, password, session=db.session)
-        if user:
-            login_user(user)
-            return redirect("/")
-        else:
-            err_msg = "Mã số sinh viên hoặc mật khẩu không đúng!"
+    username = None
+    role = None
 
-    return render_template('login.html', err_msg=err_msg)
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        role = request.form.get('role')
+        try:
+            user = dao.auth_user(username, password, session=db.session, role=role)
+            if user:
+                login_user(user)
+                return redirect('/' if user.role == UserRole.USER else '/admin')
+
+            else:
+                err_msg = 'Sai username hoặc password!'
+        except Exception as e:
+            err_msg = str(e)
+
+    return render_template('login.html',
+                           err_msg=err_msg,
+                           roles=UserRole,
+                           old_username=username,
+                           old_role=role
+                           )
+
+
 
 @app.route("/logout")
+@login_required
 def logout_my_user():
     logout_user()
     return redirect('/login')
 
 
 @app.route('/userinfo')
+@login_required
 def my_profile():
-    student = dao.get_student_by_id(current_user.student)
-
-    return render_template('profile.html', student=student)
+    student = dao.get_student_by_mssv(current_user.student.mssv)
+    student_classes = dao.get_course_classes_for_student(student.id)
+    return render_template('profile.html',
+                           student=student,
+                           student_classes=student_classes)
     
 
 
@@ -90,24 +108,75 @@ def change_password():
         err_msg=err_msg,
         success_msg=success_msg
     )
-  
-@app.route('/register-course', methods=['GET', 'POST'])
-@login_required
-def register_course():
-    courses = dao.get_courses()
 
+@app.route('/register-course')
+@login_required
+def register_course_page():
+    # 1. Lấy đúng học kỳ đang mở đăng ký
+    reg_semester = dao.get_registration_semester()
+    if not reg_semester:
+        return render_template('register_course.html', error="Hiện không trong thời gian đăng ký học phần.")
+
+    kw = request.args.get('kw')
     course_id = request.args.get('course_id')
 
-    selected_course_id = course_id
-    selected_filter_type = request.args.get('filter_type', '')
+    # 2. Lấy thông tin sinh viên
+    student = dao.get_student_by_mssv(current_user.username)
 
-    classes = dao.get_course_classes(course_id=course_id)
+    # 3. Lấy dữ liệu hiển thị (Đã lọc theo reg_semester bên trong DAO)
+    course_classes = dao.get_course_classes_in_reg_semester(course_id=course_id, kw=kw)
+    courses = dao.get_courses_by_current_reg_semester()
 
-    return render_template('register_course.html',
-                           courses=courses,
-                           classes=classes,
-                           selected_course_id = selected_course_id,
-                           selected_filter_type = selected_filter_type)
+    # 4. Lấy ID các lớp ĐÃ ĐĂNG KÝ trong học kỳ này
+    registered_ids = [reg.course_class_id for reg in student.registrations
+                      if reg.semester_id == reg_semester.id]
+
+    # 5. Lấy danh sách lớp để hiển thị bảng "Các môn đã đăng ký"
+    # Sửa lại hàm này trong DAO để nhận thêm ID học kỳ
+    student_classes = [reg.course_class for reg in student.registrations
+                       if reg.semester_id == reg_semester.id]
+
+    return render_template(
+        'register_course.html',
+        courses_in_reg_semester=courses,
+        selected_course_id=course_id,
+        course_classes_in_reg_semester=course_classes,
+        registered_ids=registered_ids,
+        student_classes=student_classes,
+        registration_semester=reg_semester
+    )
+
+@app.route('/timetable')
+@login_required
+def timetable_page():
+    current_semester = dao.get_current_semester()
+    semester_name = f"{current_semester.name} - {current_semester.year}"
+    student = dao.get_student_by_mssv(current_user.username)
+
+    student_classes = dao.get_course_classes_for_student(student.id)
+
+    days = [
+        {"name": "Thứ 2", "value": Day.MONDAY},
+        {"name": "Thứ 3", "value": Day.TUESDAY},
+        {"name": "Thứ 4", "value": Day.WEDNESDAY},
+        {"name": "Thứ 5", "value": Day.THURSDAY},
+        {"name": "Thứ 6", "value": Day.FRIDAY},
+        {"name": "Thứ 7", "value": Day.SATURDAY},
+    ]
+
+    sessions = [
+        {"name": Session.MORNING.display, "value": Session.MORNING},
+        {"name": Session.AFTERNOON.display, "value": Session.AFTERNOON},
+        {"name": Session.EVENING.display, "value": Session.EVENING},
+    ]
+
+    return render_template('timetable.html',
+                           student_classes=student_classes,
+                           semester_name=semester_name,
+                           days=days,
+                           sessions=sessions)
+
+
 
 
 if __name__ == "__main__":

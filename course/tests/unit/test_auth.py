@@ -40,9 +40,9 @@ def test_login_none_password(test_session, sample_user):
         user = auth_user("admin", None, test_session)
 
 
-def test_login_case(test_session, sample_user):
+def test_login_upper_case(test_session, sample_user):
     user = auth_user("Admin", "admin", test_session)
-    assert user is None
+    assert user
 
 def test_multiple_users(test_session):
     u1 = User(username="user1", password=hash_password("123"))

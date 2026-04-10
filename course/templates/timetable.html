@@ -1,0 +1,98 @@
+{% extends 'layout/base.html' %}
+{% block title %}Thời khóa biểu{% endblock %}
+
+{% block content %}
+<div style="width:80%; margin:0 auto;">
+<h3 class="mb-4 fw-bold mt-3">THỜI KHÓA BIỂU HỌC KỲ</h3>
+
+<div class="card shadow-sm p-4 mb-4">
+    <h5 class="fw-semibold mb-3">Thời khóa biểu - {{ semester_name }}</h5>
+
+    <div class="table-responsive">
+        <table class="table table-bordered text-center timetable-table align-middle">
+            <thead class="table-primary">
+                <tr>
+                    <th style="width: 120px; background-color: #f8f9fa;"></th>
+                    {% for day in days %}
+                    <th>{{ day.name }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for session in sessions %}
+                <tr>
+                    <td class="text-center align-middle bg-light text-start">{{ session.name | safe }}</td>
+
+                    {% for day in days %}
+                    <td style="min-height: 140px; vertical-align: top; padding: 10px; position: relative;">
+
+                        {% set slot_found = false %}
+
+                        {% for c in student_classes %}
+                            {% for slot in c.schedule_slots %}
+                                {% if slot.weekday == day.value and slot.session == session.value and not slot_found %}
+                                    <div class="timetable-slot p-3 rounded shadow-sm text-start"
+                                         style="background-color: #e3f2fd; border-left: 7px solid #1976d2;">
+                                        <div class="fw-semibold">{{ c.course.course_code }} - {{ c.course.course_name|truncate(38) }}</div>
+                                        <small class="d-block">Lớp: {{ c.class_code }}</small>
+                                        <small class="d-block">Phòng: {{ c.room.name if c.room else '—' }}</small>
+                                    </div>
+                                    {% set slot_found = true %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+
+                        {% if not slot_found %}
+
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<h5 class="fw-bold mt-5 mb-3">Danh sách môn đã đăng ký ({{ student_classes|length }} môn)</h5>
+<table class="table table-bordered table-hover">
+    <thead class="table-header">
+        <tr class="text-center">
+            <th>Mã lớp</th>
+            <th>Môn học</th>
+            <th>Tín chỉ</th>
+            <th>Lịch học</th>
+            <th>Phòng</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for c in student_classes %}
+    <tr class="text-center">
+        <td>{{ c.class_code }}</td>
+        <td class="text-start">{{ c.course.course_name }}</td>
+        <td class="text-center">{{ c.course.credits }}</td>
+        <td>
+            {% for slot in c.schedule_slots %}
+                {{ slot.weekday.value }} - {{ slot.session.value }}<br>
+            {% endfor %}
+        </td>
+        <td>{{ c.room.name if c.room else '—' }}</td>
+    </tr>
+    {% else %}
+    <tr>
+        <td colspan="5" class="text-center py-5 text-muted">Bạn chưa đăng ký môn học nào</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+
+
+</div>
+<style>
+    .timetable-slot {
+    font-size: 0.93rem;
+    line-height: 1.45;
+}
+</style>
+{% endblock %}

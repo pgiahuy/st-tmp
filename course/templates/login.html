@@ -5,30 +5,36 @@
 {% block content %}
 
 
-
-<div class="text-center mt-3" style="color: black">
-    <h2>ĐĂNG NHẬP</h2>
+<div class="text-center mt-5" style="color: black">
+    <h2 class="mb-3">ĐĂNG NHẬP</h2>
 </div>
 
-<div style="width: 60%; margin: 0 auto;">
+<div style="width: 30%; margin: 0 auto;">
     {% if err_msg %}
     <div class="alert alert-danger mt-3">{{ err_msg }}</div>
-{% endif %}
+    {% endif %}
+
     <form action="" method="post">
-  <div class="mb-3 mt-3">
-<!--    <label for="username" class="form-label">Mã số sinh viên:</label>-->
-    <input type="number" class="form-control" id="username" placeholder="Mã số sinh viên" name="username">
-  </div>
-  <div class="mb-3">
-<!--    <label for="pwd" class="form-label">Mật khẩu:</label>-->
-    <input type="password" class="form-control" id="pwd" placeholder="Mật khẩu" name="password">
-  </div>
-  <div class="form-check mb-3">
-    <label class="form-check-label">
-      <input class="form-check-input" type="checkbox" name="remember"> Remember me
-    </label>
-  </div>
-  <button type="submit" class="btn btn-success">Đăng nhập</button>
-</form>
+
+        <div class="mb-3 mt-3">
+            <input type="text" value="{{ old_username or '' }}" class="form-control" id="username"
+                   placeholder="Tên đăng nhập" name="username">
+        </div>
+
+        <div class="mb-3">
+            <input type="password" class="form-control" id="pwd" placeholder="Mật khẩu" name="password">
+        </div>
+
+        <div class="form-check mb-3">
+            <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" name="remember"> Remember me
+            </label>
+        </div>
+
+        <button type="submit" class="btn btn-success" style="width: 100%;">Đăng nhập</button>
+    </form>
 </div>
+
+<script src="{{ url_for('static', filename='js/login.js') }}"></script>
+
 {% endblock %}
