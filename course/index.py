@@ -19,14 +19,12 @@ def index():
 def login_my_user():
     err_msg = None
     username = None
-    role = None
 
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
-        role = request.form.get('role')
         try:
-            user = dao.auth_user(username, password, session=db.session, role=role)
+            user = dao.auth_user(username, password, session=db.session)
             if user:
                 login_user(user)
                 return redirect('/' if user.role == UserRole.USER else '/admin')
@@ -38,9 +36,7 @@ def login_my_user():
 
     return render_template('login.html',
                            err_msg=err_msg,
-                           roles=UserRole,
                            old_username=username,
-                           old_role=role
                            )
 
 
