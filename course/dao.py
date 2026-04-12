@@ -61,13 +61,13 @@ def get_course_classes_in_reg_semester(course_id=None, kw=None):
 
     return results
 
-def auth_user(username, password, session):
+def auth_user(username, password):
     validate_auth(username, password)
 
     username = username.strip()
     password = password.strip()
 
-    return session.query(User).filter(
+    return db.session.query(User).filter(
         func.lower(User.username) == username.lower(),
         User.password == hash_password(password)
     ).first()
@@ -256,21 +256,13 @@ def check_studied_prerequisites(semester_id, student_id, course_class_id):
 
 
 
-
-def change_password(user_id, old_password, new_password):
-    user = get_user_by_id(user_id)
-
-    if not user:
-        return {"error": "User không tồn tại"}
-    print(user)
-
-    if user.password != hash_password(old_password):
-        return {"error": "Mật khẩu cũ không đúng"}
+def change_password(user_id, new_password):
+    user = User.query.get(user_id)
 
     user.password = hash_password(new_password)
+
     db.session.commit()
 
-    return {"success": True}
 
 def get_courses_by_id(course_id):
     return Course.query.get(course_id)
