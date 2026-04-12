@@ -1,11 +1,20 @@
 import pytest
 from flask import Flask
-from course import db
+from course import db, index
+
+
+
 
 def create_app():
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app.config['PAGE_SIZE'] = 2
+    app.config['TESTING'] = True
+    app.secret_key = 'hduageifghegehsghe8ghe8ghe89ye8a9y'
     db.init_app(app)
+
+    # index.register_routes(app=app)
+
     return app
 
 
@@ -17,13 +26,24 @@ def test_app():
         db.create_all()
         yield app
         db.drop_all()
+        db.engine.dispose()
+
 
 
 @pytest.fixture
 def test_session(test_app):
     yield db.session
     db.session.rollback()
-    db.session.close()
 
 
+@pytest.fixture
+def test_client(test_app):
+    return test_app.test_client()
 
+
+@pytest.fixture
+def mock_cloudinary(monkeypatch):
+    def fake_upload(file):
+        return {'secure_url':'https://img.png'}
+
+    monkeypatch.setattr('cloudinary.uploader.upload', fake_upload)

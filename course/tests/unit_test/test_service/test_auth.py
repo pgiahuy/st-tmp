@@ -1,5 +1,4 @@
 import pytest
-from cloudinary.provisioning import Role
 
 from course.dao import auth_user, hash_password, validate_auth
 from course.models import User

@@ -1,4 +1,4 @@
-from flask import url_for, request
+from flask import url_for, request, abort
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import InlineModelFormList, QuerySelectMultipleField
@@ -9,9 +9,10 @@ from wtforms.fields.datetime import DateField
 from wtforms.validators import ValidationError
 
 import course.utils
-from course import app, db, dao, utils
+from course import app, db, dao, utils, services
 from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig, Registration, Semester, \
     ScheduleSlot, CourseClassSchedule
+from course.services import course_management_service
 
 
 class AdminAccessMixin:
@@ -19,7 +20,10 @@ class AdminAccessMixin:
         return current_user.is_authenticated and current_user.role == UserRole.ADMIN
 
     def inaccessible_callback(self, name, **kwargs):
-        return redirect('/admin/login')
+        if not current_user.is_authenticated:
+            return redirect("/login")
+
+        return abort(403)
 
 
 
@@ -130,8 +134,9 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
     column_searchable_list = ['class_code']
     column_filters = ['room.name', 'course.course_name', 'semester']
 
-    def on_model_change(self, form, model, is_created):
 
+
+    def on_model_change(self, form, model, is_created):
         selected_slots = form.slots_picker.data
         room = form.room.data
 
@@ -139,44 +144,40 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
             return
 
         slot_ids = [s.id for s in selected_slots]
-        room_id = room.id
-        current_class_id = model.id if not is_created else None
+        class_id = model.id if not is_created else None
 
-        conflict = dao.check_schedule_conflict(
+        result = course_management_service.validate_schedule_conflict(
             db.session,
-            room_id,
+            room,
             slot_ids,
-            current_class_id
+            class_id
         )
 
-        if conflict:
-            other_class = conflict.class_code
+        if result:
+            conflict = result["conflict"]
+            slot = result["slot"]
 
-            conflicting_slot = None
-            for assoc in conflict.schedule_associations:
-                if assoc.slot.id in slot_ids:
-                    conflicting_slot = assoc.slot
-                    break
-
-            if conflicting_slot:
-                time_info = f"{conflicting_slot.weekday.value} ({conflicting_slot.session.label})"
-            else:
-                time_info = "không xác định"
-
-            raise ValidationError(
-                f"Trùng lịch: Phòng {room.name} đã được sử dụng bởi lớp '{other_class}' "
-                f"vào {time_info}. Vui lòng kiểm tra lại!"
+            time_info = (
+                "Không xác định"
+                if not slot
+                else f"{slot.weekday.value} ({slot.session.label})"
             )
 
-        model.schedule_associations = [
-            CourseClassSchedule(slot=s) for s in selected_slots
-        ]
+            raise ValidationError(
+                f"Trùng lịch: Phòng {room.name} đã được sử dụng "
+                f"bởi lớp '{conflict.class_code}' vào {time_info}"
+            )
+
+        model.schedule_associations = course_management_service.build_schedule_associations(
+            model,
+            selected_slots
+        )
+
     def on_model_delete(self, model):
-
-        count = db.session.query(Registration).filter_by(course_class_id=model.id).count()
-        if count > 0:
-            raise ValidationError(f"Không thể xóa, lớp đã có {count} sinh viên đăng ký!")
-
+        course_management_service.delete_course_class_service(
+            model.id,
+            db.session
+        )
 
 
 
