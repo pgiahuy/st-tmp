@@ -1,7 +1,7 @@
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum as SQLEnum, DateTime, func
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum as SQLEnum, DateTime, func, Double
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from course import db, app
 
@@ -46,7 +46,7 @@ class Base(db.Model):
     __abstract__ = True
     id = Column(Integer, primary_key=True, autoincrement=True)
     active = Column(Boolean, default=True)
-    created_date = Column(DateTime, default=datetime.utcnow)
+    created_date = Column(DateTime, default=datetime.now(UTC))
     def __str__(self):
         return getattr(self, "name", str(self.id))
 
@@ -169,8 +169,8 @@ class Registration(Base):
     course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     semester_id = Column(Integer, ForeignKey("semesters.id"))
 
-    registered_at = Column(DateTime, default=func.now())
-
+    registered_at = Column(DateTime, default=func.now(UTC))
+    midterm_score = Column(Double, nullable=True)
     __table_args__ = (
         db.UniqueConstraint('student_id', 'course_class_id', name='unique_registration'),
     )

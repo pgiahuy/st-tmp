@@ -106,7 +106,7 @@
         </tr>
         </thead>
         <tbody>
-        {% for c in student_classes %}
+        {% for c in registered_course_class %}
         <tr class="text-center {% if c.is_full %}table-secondary{% endif %}">
             <td>{{ c.class_code }}</td>
             <td class="text-start ms-5">{{ c.course.course_name }}</td>

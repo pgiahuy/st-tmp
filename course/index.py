@@ -27,10 +27,10 @@ def login_my_user():
             user = dao.auth_user(username, password, session=db.session)
             if user:
                 login_user(user)
-                return redirect('/' if user.role == UserRole.USER else '/admin')
+                return redirect('/admin' if user.role == UserRole.ADMIN else '/')
 
             else:
-                err_msg = 'Sai username hoặc password!'
+                err_msg = 'Sai tên đăng nhập hoặc mật khẩu!'
         except Exception as e:
             err_msg = str(e)
 
@@ -112,20 +112,21 @@ def register_course_page():
     course_classes = dao.get_course_classes_in_reg_semester(course_id=course_id, kw=kw)
     courses = dao.get_courses_by_current_reg_semester()
 
-    registered_ids = [reg.course_class_id for reg in student.registrations
-                      if reg.semester_id == reg_semester.id]
+    registered_ids = dao.get_course_class_ids_student_registered(semester_id=reg_semester.id, student_id=student.id)
 
-
-    student_classes = [reg.course_class for reg in student.registrations
-                       if reg.semester_id == reg_semester.id]
-
+    registered_course_class = dao.get_course_classes_student_registered(semester_id=reg_semester.id, student_id=student.id)
+    print("========================")
+    print(student.full_name)
+    print(reg_semester.name)
+    print(dao.get_course_classes_student_registered(student_id=student.id, semester_id=reg_semester.id))
     return render_template(
         'register_course.html',
         courses_in_reg_semester=courses,
         selected_course_id=course_id,
         course_classes_in_reg_semester=course_classes,
         registered_ids=registered_ids,
-        student_classes=student_classes,
+        registered_course_class=registered_course_class,
+
         registration_semester=reg_semester
     )
 

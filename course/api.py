@@ -1,30 +1,30 @@
 from flask import request, jsonify
 from flask_login import login_required, current_user
 
+import course.services.registration_service
 from course import dao, app
-
+from course.services import registration_service
 
 
 @app.route('/api/course-register', methods=['POST'])
 @login_required
-def register_course():
+def register_course_api():
     data = request.get_json()
+
+    if not data or "course_class_id" not in data:
+        return jsonify({"success": False, "message": "Thiếu thông tin"}), 400
+
     mssv = current_user.username
-    student = dao.get_student_by_mssv(mssv)
-    if not student:
+    student_id = dao.get_student_id_by_mssv(mssv)
+
+    if not student_id:
         return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
-    student_id = student.id
+
     course_class_id = int(data['course_class_id'])
+    semester_id = dao.get_registration_semester().id
 
-    print("student_id:", student_id)
-    print("course_class_id:",course_class_id)
-    action = data.get('action')
     try:
-        if action == 'register':
-            dao.register_course(student_id, course_class_id)
-        elif action == 'unregister':
-            dao.unregister_course(student_id, course_class_id)
-
+        registration_service.register_course(semester_id,student_id, course_class_id)
         return jsonify({
             "success": True
         }), 200
@@ -39,7 +39,6 @@ def register_course():
 @app.route('/api/register-course/confirm', methods=['POST'])
 @login_required
 def confirm_register():
-    data = request.get_json()
     mssv = current_user.username
     student = dao.get_student_by_mssv(mssv)
     if not student:
@@ -47,7 +46,7 @@ def confirm_register():
     student_id = student.id
 
     try:
-        dao.confirm_registration(student_id)
+        course.services.registration_service.confirm_registration(student_id)
 
         return jsonify({
             "success": True,
@@ -66,13 +65,15 @@ def confirm_register():
 @login_required
 def unregister_course_route(course_class_id):
     mssv = current_user.username
+    semester_id = dao.get_registration_semester().id
     student = dao.get_student_by_mssv(mssv)
     if not student:
         return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
     student_id = student.id
 
     try:
-        dao.unregister_course(student_id, course_class_id)
+        registration_service.cancel_registration(semester_id , student_id, course_class_id)
+
         return jsonify({
             "success": True
         }), 200
