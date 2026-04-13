@@ -2,7 +2,9 @@ import pytest
 
 from course import dao
 from course.dao import hash_password
-from course.services.registration_service import register_course
+from course.exceptions import BusinessException
+from course.services import registration_service
+from course.services.registration_service import register_course, confirm_registration
 from course.models import *
 from course.tests.unit_test.test_base import test_app,test_session
 
@@ -23,17 +25,19 @@ def sample_user(test_session,sample_student):
     return user
 
 
-
-
 @pytest.fixture
 def sample_semester(test_session):
-    semester = Semester(
+    s1 = Semester(
         name="HK1",
         year=2026
     )
-    test_session.add(semester)
+    s2 = Semester(
+        name="HK2",
+        year=2026
+    )
+    test_session.add_all([s1,s2])
     test_session.commit()
-    return semester
+    return [s1,s2]
 
 @pytest.fixture
 def sample_room(test_session):
@@ -48,8 +52,6 @@ def sample_room(test_session):
     test_session.add_all([room_1, room_2])
     test_session.commit()
     return [room_1, room_2]
-
-
 
 @pytest.fixture
 def sample_course(test_session):
@@ -74,20 +76,53 @@ def sample_course_prerequisite(test_session, sample_course):
     test_session.commit()
     return pre
 
-
+# hk1 - room[0]
 @pytest.fixture
 def sample_course_class(test_session, sample_course, sample_room, sample_semester):
     course_class_1 = CourseClass(
         class_code="KTLT",
         course_id=sample_course[0].id,
         room_id=sample_room[0].id,
-        semester_id=sample_semester.id,
+        semester_id=sample_semester[0].id,
         max_students=40,
         active=True
     )
+
     test_session.add(course_class_1)
     test_session.commit()
     return course_class_1
+
+@pytest.fixture
+def sample_course_class_hk2(test_session, sample_course, sample_room, sample_semester):
+    course_class_1 = CourseClass(
+        class_code="KTLT",
+        course_id=sample_course[0].id,
+        room_id=sample_room[0].id,
+        semester_id=sample_semester[1].id,
+        max_students=40,
+        active=True
+    )
+
+    test_session.add(course_class_1)
+    test_session.commit()
+    return course_class_1
+
+# hk1 - room[1]
+@pytest.fixture
+def sample_course_class_full_slot(test_session, sample_course, sample_room, sample_semester):
+    course_class_1 = CourseClass(
+        class_code="CNPM",
+        course_id=sample_course[1].id,
+        room_id=sample_room[1].id,
+        semester_id=sample_semester[0].id,
+        max_students=0,
+        active=True
+    )
+
+    test_session.add(course_class_1)
+    test_session.commit()
+    return course_class_1
+
 
 @pytest.fixture
 def sample_course_class_need_prerequisite(test_session, sample_course, sample_room, sample_semester):
@@ -95,7 +130,7 @@ def sample_course_class_need_prerequisite(test_session, sample_course, sample_ro
         class_code="CNPM",
         course_id=sample_course[1].id,
         room_id=sample_room[1].id,
-        semester_id=sample_semester.id,
+        semester_id=sample_semester[1].id,
         max_students=40,
         active=True
     )
@@ -103,30 +138,160 @@ def sample_course_class_need_prerequisite(test_session, sample_course, sample_ro
     test_session.commit()
     return course_class_1
 
+@pytest.fixture
+def sample_schedule_slots(test_session):
+    slot1 = ScheduleSlot(weekday=Day.MONDAY, session=Session.MORNING)
+
+    test_session.add(slot1)
+    test_session.commit()
+
+    return slot1
+
+
+
+
+@pytest.fixture
+def sample_course_class_conflict_1(test_session, sample_course, sample_room, sample_semester):
+    course_class_1 = CourseClass(
+        class_code="KTLT",
+        course_id=sample_course[1].id,
+        room_id=sample_room[1].id,
+        semester_id=sample_semester[0].id,
+        max_students=50,
+        active=True
+    )
+
+    test_session.add(course_class_1)
+    test_session.commit()
+    return course_class_1
+
+@pytest.fixture
+def sample_course_class_conflict_2(test_session, sample_course, sample_room, sample_semester):
+    course_class_1 = CourseClass(
+        class_code="CNPM",
+        course_id=sample_course[1].id,
+        room_id=sample_room[1].id,
+        semester_id=sample_semester[0].id,
+        max_students=50,
+        active=True
+    )
+
+    test_session.add(course_class_1)
+    test_session.commit()
+    return course_class_1
+
+@pytest.fixture
+def sample_course_class_schedule(test_session, sample_course_class_conflict_1, sample_course_class_conflict_2, sample_schedule_slots):
+    assoc1 = CourseClassSchedule(
+        course_class_id=sample_course_class_conflict_1.id,
+        slot_id=sample_schedule_slots.id
+    )
+    assoc2 = CourseClassSchedule(
+        course_class_id=sample_course_class_conflict_2.id,
+        slot_id=sample_schedule_slots.id
+    )
+    test_session.add_all([assoc1, assoc2])
+    test_session.commit()
+
+    return [assoc1, assoc2]
+# =========
 
 def test_register_success(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
+    res = register_course(sample_semester[0].id ,sample_student.id, sample_course_class.id)
+    assert res is True
 
+def test_register_fail_missing_prerequisite(test_session,monkeypatch,sample_semester,sample_student,
+                                            sample_course_class_need_prerequisite,sample_course_prerequisite):
+
+    with pytest.raises(BusinessException) as e:
+        register_course(sample_semester[0].id, sample_student.id, sample_course_class_need_prerequisite.id)
+    assert "Chưa hoàn thành môn tiên quyết!" in str(e.value)
+
+def test_register_fail_registered(test_session,monkeypatch,sample_semester, sample_student, sample_course_class):
+
+     register_course(sample_semester[0].id, sample_student.id, sample_course_class.id)
+
+     with pytest.raises(BusinessException) as e:
+         register_course(sample_semester[0].id, sample_student.id, sample_course_class.id)
+     assert "Bạn đã đăng ký một lớp khác của môn học này trong học kỳ này rồi!" in str(e.value)
+
+
+def test_register_fail_studied(test_session,monkeypatch,sample_semester, sample_student, sample_course_class):
+    # HK1
+    register_course(sample_semester[0].id, sample_student.id, sample_course_class.id)
+
+    with pytest.raises(BusinessException) as e:#HK2
+        register_course(sample_semester[1].id, sample_student.id, sample_course_class.id)
+    assert "Bạn đã hoàn thành môn học này ở các học kỳ trước!" in str(e.value)
+
+def test_register_fail_max_credit(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
     monkeypatch.setattr(
-        "course.dao.get_registration_semester",
-        lambda: sample_semester
+        "course.dao.get_config_value",
+        lambda key, default=None: 2 if key == "MAX_CREDITS" else default
+    )
+    with pytest.raises(BusinessException) as e:
+        register_course(sample_semester[0].id, sample_student.id, sample_course_class.id)
+    assert "Vượt quá giới hạn" in str(e.value)
+
+def test_register_equal_max_credit(monkeypatch, sample_semester, sample_student, sample_course_class):
+    monkeypatch.setattr(
+        "course.dao.get_config_value",
+        lambda k, d=None: 3 if k == "MAX_CREDITS" else d
+    )
+    res = register_course(sample_semester[0].id, sample_student.id, sample_course_class.id)
+
+    assert res is True
+
+def test_register_fail_min_credit(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
+    monkeypatch.setattr(
+        "course.dao.get_config_value",
+        lambda key, default=None: 12 if key == "MIN_CREDITS" else default
     )
 
-    res = register_course(sample_student.id, sample_course_class.id)
+    register_course(sample_semester[0].id,sample_student.id,sample_course_class.id)
+    with pytest.raises(BusinessException) as e:
+        confirm_registration(sample_semester[0].id ,sample_student.id)
+    assert "tối thiểu" in str(e.value)
 
-    assert res["success"] is True
+def test_register_fail_full_slot(test_session, monkeypatch, sample_semester, sample_student, sample_course_class_full_slot):
 
-def test_register_fail_missing_prerequisite(
-    test_session,
-    monkeypatch,
-    sample_semester,
-    sample_student,
-    sample_course_class_need_prerequisite,
-    sample_course_prerequisite
-):
-    monkeypatch.setattr(
-        "course.dao.get_registration_semester",
-        lambda: sample_semester
+    with pytest.raises(BusinessException) as e:
+        register_course(sample_semester[0].id, sample_student.id, sample_course_class_full_slot.id)
+    assert "đã đầy" in str(e.value)
+
+def test_register_conflict(test_session, monkeypatch, sample_semester, sample_student,sample_course_class_schedule,
+                           sample_course_class_conflict_1, sample_course_class_conflict_2):
+
+    register_course(sample_semester[0].id, sample_student.id, sample_course_class_conflict_1.id)
+
+    with pytest.raises(BusinessException) as e:
+        register_course(sample_semester[0].id, sample_student.id, sample_course_class_conflict_2.id)
+    assert "Trùng lịch" in str(e.value)
+
+
+def test_register_fail_class_not_found(sample_student, sample_semester):
+    with pytest.raises(ValueError):
+        register_course(sample_semester[0].id, sample_student.id, 999)
+
+
+def test_register_fail_student_not_found(sample_course_class, sample_semester):
+    with pytest.raises(ValueError):
+        register_course(sample_semester[0].id, 999, sample_course_class.id)
+
+
+def test_register_fail_inactive_class(test_session, sample_course, sample_room, sample_semester, sample_student):
+    cls = CourseClass(
+        class_code="WEB",
+        course_id=sample_course[0].id,
+        room_id=sample_room[0].id,
+        semester_id=sample_semester[0].id,
+        max_students=40,
+        active=False
     )
-    with pytest.raises(Exception):
-        register_course(sample_student.id, sample_course_class_need_prerequisite.id)
+    test_session.add(cls)
+    test_session.commit()
+    with pytest.raises(ValueError) as e:
+        register_course(sample_semester[0].id, sample_student.id, cls.id)
+
+    assert "không mở" in str(e.value)
 
