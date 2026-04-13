@@ -65,13 +65,15 @@ def confirm_register():
 @login_required
 def unregister_course_route(course_class_id):
     mssv = current_user.username
+    semester_id = dao.get_registration_semester().id
     student = dao.get_student_by_mssv(mssv)
     if not student:
         return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
     student_id = student.id
 
     try:
-        dao.unregister_course(student_id, course_class_id)
+        registration_service.cancel_registration(semester_id , student_id, course_class_id)
+
         return jsonify({
             "success": True
         }), 200

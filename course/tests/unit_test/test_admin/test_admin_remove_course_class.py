@@ -110,7 +110,7 @@ class TestRemoveCourseClassService:
     def test_delete_course_class_success(self, test_session, sample_course_class_none):
         result = course_management_service.delete_course_class_service(test_session, sample_course_class_none.id)
         assert result is True
-        deleted = dao.get_course_class_by_id(test_session, sample_course_class_none.id)
+        deleted = dao.get_course_class_by_id(sample_course_class_none.id)
         assert deleted is None
 
     def test_delete_course_class_has_registration(self, test_session, sample_course_class, sample_registration):

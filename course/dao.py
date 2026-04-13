@@ -14,7 +14,7 @@ def hash_password(password):
     return hashlib.md5(password.strip().encode('utf-8')).hexdigest()
 
 def get_user_by_id(id):
-    return User.query.get(id)
+    return db.session.get(User, id)
 
 def get_student_by_id(id):
     return Student.query.filter_by(id=id).first()
@@ -91,7 +91,7 @@ def get_all_course_classes():
 
 def get_conflicting_class(student_id, course_class_id, reg_semester_id):
 
-    new_class = CourseClass.query.get(course_class_id)
+    new_class = db.session.get(CourseClass, course_class_id)
     if not new_class or not reg_semester_id:
         return None
 
@@ -192,18 +192,31 @@ def get_total_credits(student_id, semester_id):
     return total
 
 
-def unregister_course(student_id, course_class_id):
-    semester = get_registration_semester()
-    reg = Registration.query.filter_by(
+# def unregister_course(student_id, course_class_id):
+#     semester = get_registration_semester()
+#     reg = Registration.query.filter_by(
+#         student_id=student_id,
+#         course_class_id=course_class_id,
+#         semester_id=semester.id
+#     ).first()
+#     if not reg:
+#         raise Exception("Lớp chưa đăng ký")
+#     # @minuong check var chỗ này điii
+#     db.session.delete(reg)
+#     db.session.commit()
+#
+def get_registration(student_id, course_class_id, semester_id):
+    return Registration.query.filter_by(
         student_id=student_id,
         course_class_id=course_class_id,
-        semester_id=semester.id
+        semester_id=semester_id
     ).first()
-    if not reg:
-        raise Exception("Lớp chưa đăng ký")
-    # @minuong check var chỗ này điii
+
+
+def delete_registration(reg):
     db.session.delete(reg)
     db.session.commit()
+
 
 def get_semester_by_id(semester_id):
     return Semester.query.filter_by(id=semester_id).first()
@@ -225,8 +238,6 @@ def get_all_student_studied(semester_id , student_id):
 
 
 def check_duplicate_in_semester(semester_id ,student_id, course_class_id):
-
-
 
     course_id = get_course_class_by_id(course_class_id).course.id
 
@@ -257,7 +268,7 @@ def check_studied_prerequisites(semester_id, student_id, course_class_id):
 
 
 def change_password(user_id, new_password):
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     user.password = hash_password(new_password)
 
@@ -321,3 +332,5 @@ def register_course(semester_id, student_id, course_class_id):
     except Exception:
         db.session.rollback()
         raise
+
+

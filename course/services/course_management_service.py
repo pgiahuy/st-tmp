@@ -8,7 +8,7 @@ def delete_course_class_service(session, course_class_id):
     if count > 0:
         raise ValueError(f"Không thể xoá vì đã có {count} sinh viên đăng ký")
 
-    course_class = dao.get_course_class_by_id(session, course_class_id)
+    course_class = dao.get_course_class_by_id(course_class_id)
 
     if not course_class:
         raise ValueError("Class not found")
