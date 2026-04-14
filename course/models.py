@@ -6,6 +6,11 @@ from enum import Enum
 from course import db, app
 
 
+class ConfigEnum(Enum):
+    MAX_CREDITS = "MAX_CREDITS"
+    MIN_CREDITS = "MIN_CREDITS"
+    MAX_STUDENTS_PER_CLASS = "MAX_STUDENTS_PER_CLASS"
+
 class UserRole(Enum):
     USER = (1, "Sinh viên")
     ADMIN = (2, "Quản trị viên")

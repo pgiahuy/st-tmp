@@ -24,7 +24,7 @@ def login_my_user():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         try:
-            user = dao.auth_user(username, password, session=db.session)
+            user = dao.auth_user(username, password)
             if user:
                 login_user(user)
                 return redirect('/admin' if user.role == UserRole.ADMIN else '/')

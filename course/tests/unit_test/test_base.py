@@ -1,8 +1,7 @@
 import pytest
 from flask import Flask
 from course import db, index
-
-
+from course.admin import admin
 
 
 def create_app():
@@ -12,7 +11,7 @@ def create_app():
     app.config['TESTING'] = True
     app.secret_key = 'hduageifghegehsghe8ghe8ghe89ye8a9y'
     db.init_app(app)
-
+    admin.init_app(app)
     # index.register_routes(app=app)
 
     return app
