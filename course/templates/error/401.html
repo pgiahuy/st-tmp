@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>401 - Chưa xác thực</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/error.css') }}">
+</head>
+<body class="error-401">
+    <div class="container">
+        <div class="error-code">401</div>
+        <div class="error-title">Chưa xác thực</div>
+        <div class="error-message">
+            Bạn cần đăng nhập để truy cập trang này.<br>
+            Vui lòng đăng nhập bằng tài khoản hợp lệ.
+        </div>
+
+        <a href="{{ url_for('login_my_user') }}" class="btn">Đăng nhập ngay</a>
+    </div>
+</body>
+</html>

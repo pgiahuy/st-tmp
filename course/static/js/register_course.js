@@ -71,17 +71,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (checkbox.dataset.processing === '1') return;
         checkbox.dataset.processing = '1';
+
         const isChecked = checkbox.checked;
-
-        if (!isChecked) {
-            const confirmCancel = confirm('Bạn có chắc muốn huỷ lớp này?');
-            if (!confirmCancel) {
-                checkbox.checked = true;
-                checkbox.dataset.processing = '0';
-                return;
-            }
-        }
-
         checkbox.disabled = true;
 
         try {
@@ -90,7 +81,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     course_class_id: classId,
-                    action: isChecked ? 'register' : 'unregister'
                 })
             });
 

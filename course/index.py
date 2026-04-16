@@ -8,6 +8,13 @@ from course.models import UserRole, Day, Session
 
 
 def register_routes(app):
+    @app.errorhandler(401)
+    def unauthorized(error):
+        return render_template('error/401.html'), 401
+
+    @app.errorhandler(403)
+    def forbidden(error):
+        return render_template('error/403.html'), 403
 
     @app.after_request
     def add_header(response):
