@@ -75,7 +75,8 @@ def cancel_registration(semester_id, student_id, course_class_id):
     if not reg:
         raise BusinessException("Sinh viên chưa đăng ký lớp này")
 
-    now = datetime.now()
+    now = datetime.now().date()
+
 
     if reg.semester.start_date and now > reg.semester.start_date + timedelta(days=14):
         raise BusinessException("Không được huỷ môn sau 2 tuần bắt đầu học kỳ!")

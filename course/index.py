@@ -8,6 +8,15 @@ from course.models import UserRole, Day, Session
 
 
 def register_routes(app):
+
+    @app.after_request
+    def add_header(response):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+        return response
+
+
     @app.route('/')
     def index():
         print(current_user)
@@ -41,6 +50,7 @@ def register_routes(app):
     @login_required
     def logout_my_user():
         logout_user()
+        session.clear()
         return redirect('/login')
 
     @app.route('/userinfo')

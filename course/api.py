@@ -8,8 +8,12 @@ from course.services import registration_service
 
 def register_api(app):
     @app.route('/api/course-register', methods=['POST'])
-    @login_required
     def register_course_api():
+        if not current_user.is_authenticated:
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized"
+            }), 401
         data = request.get_json()
 
         if not data or "course_class_id" not in data:
@@ -37,8 +41,12 @@ def register_api(app):
             }), 400
 
     @app.route('/api/register-course/confirm', methods=['POST'])
-    @login_required
     def confirm_register():
+        if not current_user.is_authenticated:
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized"
+            }), 401
         mssv = current_user.username
         student = dao.get_student_by_mssv(mssv)
         if not student:
@@ -61,8 +69,12 @@ def register_api(app):
             }), 400
 
     @app.route('/api/course-register/<int:course_class_id>', methods=['DELETE'])
-    @login_required
     def unregister_course_route(course_class_id):
+        if not current_user.is_authenticated:
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized"
+            }), 401
         mssv = current_user.username
         semester_id = dao.get_registration_semester().id
         student = dao.get_student_by_mssv(mssv)
