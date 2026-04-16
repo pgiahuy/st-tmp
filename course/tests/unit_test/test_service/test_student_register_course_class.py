@@ -231,7 +231,7 @@ def test_register_fail_studied(test_session,monkeypatch,sample_semester, sample_
 def test_register_fail_max_credit(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
     monkeypatch.setattr(
         "course.dao.get_config_value",
-        lambda key, default=None: 2 if key == "MAX_CREDITS" else default
+        lambda key, default=None: 2 if key == ConfigEnum.MAX_CREDITS else default
     )
 
     with pytest.raises(BusinessException) as e:
@@ -242,7 +242,7 @@ def test_register_equal_max_credit(monkeypatch, sample_semester, sample_student,
 
     monkeypatch.setattr(
         "course.dao.get_config_value",
-        lambda k, d=None: 3 if k == "MAX_CREDITS" else d
+        lambda k, d=None: 3 if k == ConfigEnum.MAX_CREDITS else d
     )
     res = register_course(sample_semester[0].id, sample_student.id, sample_course_class.id)
 
@@ -251,7 +251,7 @@ def test_register_equal_max_credit(monkeypatch, sample_semester, sample_student,
 def test_register_fail_min_credit(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
     monkeypatch.setattr(
         "course.dao.get_config_value",
-        lambda key, default=None: 12 if key == "MIN_CREDITS" else default
+        lambda key, default=None: 12 if key == ConfigEnum.MIN_CREDITS else default
     )
 
 

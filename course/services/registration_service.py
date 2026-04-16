@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from course import db, dao
 from course.exceptions import BusinessException
+from course.models import ConfigEnum
 
 
 def register_course(semester_id , student_id, course_class_id):
@@ -40,7 +41,7 @@ def register_course(semester_id , student_id, course_class_id):
     if not dao.check_studied_prerequisites( semester_id ,student_id, course_class_id):
         raise BusinessException("Chưa hoàn thành môn tiên quyết!")
 
-    max_credits_limit = dao.get_config_value('MAX_CREDITS', 25)
+    max_credits_limit = dao.get_config_value(ConfigEnum.MAX_CREDITS, 25)
 
     current_credits = dao.get_total_credits(student_id, semester_id)
     new_credits = course_class.course.credits
@@ -56,7 +57,7 @@ def register_course(semester_id , student_id, course_class_id):
 
 
 def confirm_registration(semester_id, student_id):
-    min_credits_limit = dao.get_config_value('MIN_CREDITS', 12)
+    min_credits_limit = dao.get_config_value(ConfigEnum.MIN_CREDITS, 12)
 
     total = dao.get_total_credits(student_id,semester_id)
 
