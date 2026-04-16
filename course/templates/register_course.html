@@ -5,7 +5,12 @@
 <div style="width:80%; margin:0 auto;">
     <h3 class="mb-4 fw-bold mt-3">ĐĂNG KÝ MÔN HỌC</h3>
 
-
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <div>
+            Sinh viên cần xuất phiếu đăng ký để ghi nhận kết quả đăng ký môn học.
+        </div>
+    </div>
     <div class="card shadow-sm p-3 mb-4">
 
         <form method="get" class="row g-3 align-items-end">
@@ -26,9 +31,11 @@
 
             <div class="col-md-1">
                 <a href="{{ url_for('register_course_page') }}" class="btn btn-primary">
-                    Reset
+                    Tất cả
                 </a>
             </div>
+
+
 
 
         </form>
@@ -57,7 +64,7 @@
                 <td>{{ c.course.credits }}</td>
                 <td>
                     {% for s in c.schedule_associations %}
-                    {{ s.slot.weekday.value }} - {{ s.slot.session.value }}<br>
+                    {{ s.slot.weekday.label }} - {{ s.slot.session }}<br>
                     {% endfor %}
                 </td>
                 <td>{{ c.room.name }}</td>
@@ -69,6 +76,7 @@
                            class="register-checkbox"
                            style="transform: scale(1.3);"
                            data-class-id="{{ c.id }}"
+                           data-registered="{{ '1' if c.id in registered_ids else '0' }}"
                            {% if c.id in registered_ids %}checked disabled{% endif %}>
                 </td>
             </tr>
@@ -85,6 +93,7 @@
     <hr class="mt-4">
 
     <h3 class="mb-2 fw-bold mt-4">CÁC MÔN ĐÃ ĐĂNG KÝ</h3>
+    <p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
 
     <table class="table table-bordered table-hover shadow-sm">
         <thead class="table-header">
@@ -105,7 +114,7 @@
             <td>{{ c.course.credits }}</td>
             <td>
                 {% for s in c.schedule_associations %}
-                {{ s.slot.weekday.value }} - {{ s.slot.session.value }}<br>
+                {{ s.slot.weekday.label }} - {{ s.slot.session }}<br>
                 {% endfor %}
             </td>
             <td class="text-center">

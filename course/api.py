@@ -1,3 +1,6 @@
+import io
+from email.contentmanager import set_message_content
+
 from flask import request, jsonify
 from flask_login import login_required, current_user
 
@@ -28,6 +31,7 @@ def register_api(app):
         course_class_id = int(data['course_class_id'])
         semester_id = dao.get_registration_semester().id
 
+
         try:
             registration_service.register_course(semester_id, student_id, course_class_id)
             return jsonify({
@@ -52,14 +56,19 @@ def register_api(app):
         if not student:
             return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
         student_id = student.id
-        semester_id = dao.get_registration_semester().id
+        semester = dao.get_registration_semester()
+
+        if not semester:
+            return jsonify({"success": False, "message": "Không có học kỳ"}), 400
+        semester_id = semester.id
 
         try:
             course.services.registration_service.confirm_registration(semester_id ,student_id)
 
             return jsonify({
                 "success": True,
-                "message": "Đủ điều kiện đăng ký"
+                "message": "Đủ điều kiện đăng ký",
+                "semester_id": semester_id
             }), 200
 
         except Exception as e:
@@ -90,3 +99,4 @@ def register_api(app):
             }), 200
         except BusinessException as e:
             return jsonify({"success": False, "message": str(e)}), 400
+

@@ -18,12 +18,19 @@
 
         <div class="mb-3 mt-3">
             <input type="text" value="{{ old_username or '' }}" class="form-control" id="username"
-                   placeholder="Tên đăng nhập" name="username">
+                   placeholder="Tên đăng nhập" name="username" required>
         </div>
 
         <div class="mb-3">
-            <input type="password" class="form-control" id="pwd" placeholder="Mật khẩu" name="password">
+            <div class="input-group mb-3">
+                <input type="password" class="form-control" id="pwd" placeholder="Mật khẩu" name="password" required>
+                <span class="input-group-text toggle-password" style="cursor:pointer;">
+                        <i class="bi bi-eye"></i>
+                </span>
+            </div>
         </div>
+
+
 
 
 

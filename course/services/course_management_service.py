@@ -19,6 +19,7 @@ def delete_course_class_service(session, course_class_id):
 
 
 def validate_course_class(semester_id, room_id , slot_ids, max_students, course_class_id=None):
+
     room = dao.get_room__by_id(room_id)
     if not room:
         raise ValueError("Room not found")

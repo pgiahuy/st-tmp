@@ -1,15 +1,16 @@
-const roleSelect = document.querySelector("select[name='role']");
-    const usernameInput = document.getElementById("username");
+document.querySelectorAll('.toggle-password').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+        const input = toggle.previousElementSibling;
+        const icon = toggle.querySelector('i');
 
-    roleSelect.addEventListener("change", function () {
-        if (this.value === "ADMIN") {
-            usernameInput.type = "text";
-            usernameInput.placeholder = "Tên đăng nhập";
-        } else if (this.value === "USER") {
-            usernameInput.type = "number";
-            usernameInput.placeholder = "Mã số sinh viên";
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.remove('bi-eye');
+            icon.classList.add('bi-eye-slash');
         } else {
-            usernameInput.type = "text";
-            usernameInput.placeholder = "Nhập...";
+            input.type = 'password';
+            icon.classList.remove('bi-eye-slash');
+            icon.classList.add('bi-eye');
         }
     });
+});

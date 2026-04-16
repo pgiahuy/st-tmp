@@ -10,6 +10,7 @@ from wtforms.validators import ValidationError
 
 import course.utils
 from course import app, db, dao, utils, services
+from course.exceptions import BusinessException
 from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig, Registration, Semester, \
     ScheduleSlot, CourseClassSchedule
 from course.services import course_management_service
@@ -124,7 +125,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         'slots_picker': QuerySelectMultipleField(
             'Chọn Lịch Học',
             query_factory=lambda: ScheduleSlot.query.all(),
-            get_label=lambda s: f"{s.weekday.value} - {s.session.value}"
+            get_label=lambda s: f"{s.weekday.label} - {s.session}"
         )
     }
 
@@ -140,34 +141,41 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         selected_slots = form.slots_picker.data
         room = form.room.data
 
+        print("======================")
+        print(room.id, room.name)
+
         if not selected_slots or not room:
             return
 
         slot_ids = [s.id for s in selected_slots]
         class_id = model.id if not is_created else None
 
-        result = course_management_service.validate_course_class(
-            db.session,
-            room,
-            slot_ids,
-            model.max_students,
-            class_id
-        )
-
-        if result:
-            conflict = result["conflict"]
-            slot = result["slot"]
-
-            time_info = (
-                "Không xác định"
-                if not slot
-                else f"{slot.weekday.value} ({slot.session.label})"
+        try:
+            result = course_management_service.validate_course_class(
+                db.session,
+                room.id,
+                slot_ids,
+                model.max_students,
+                class_id
             )
 
-            raise ValidationError(
-                f"Trùng lịch: Phòng {room.name} đã được sử dụng "
-                f"bởi lớp '{conflict.class_code}' vào {time_info}"
-            )
+            if result:
+                conflict = result["conflict"]
+                slot = result["slot"]
+
+                time_info = (
+                    "Không xác định"
+                    if not slot
+                    else f"{slot.weekday.value} ({slot.session.label})"
+                )
+
+                raise ValidationError(
+                    f"Trùng lịch: Phòng {room.name} đã được sử dụng "
+                    f"bởi lớp '{conflict.class_code}' vào {time_info}"
+                )
+
+        except Exception as e:
+            raise ValidationError(str(e))
 
         model.schedule_associations = course_management_service.build_schedule_associations(
             model,
