@@ -13,8 +13,11 @@
         <div class="error-message">
             Bạn không có quyền truy cập vào trang này.<br>
         </div>
-
-        <a href="{{ url_for('index') }}" class="btn">Quay về trang chủ</a>
+        {% if current_user.role.name == "ADMIN" %}
+    <a href="/admin" class="btn">Quay về trang chủ</a>
+{% else %}
+    <a href="{{ url_for('index') }}" class="btn">Quay về trang chủ</a>
+{% endif %}
     </div>
 </body>
 </html>

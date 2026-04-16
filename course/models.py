@@ -20,13 +20,17 @@ class UserRole(Enum):
         self.label = label
 
 class Day(Enum):
-    MONDAY = "Mon"
-    TUESDAY = "Tue"
-    WEDNESDAY = "Wed"
-    THURSDAY = "Thu"
-    FRIDAY = "Fri"
-    SATURDAY = "Sat"
-    SUNDAY = "Sun"
+    MONDAY = ("MON", "Thứ 2")
+    TUESDAY = ("TUE", "Thứ 3")
+    WEDNESDAY = ("WED", "Thứ 4")
+    THURSDAY = ("THU", "Thứ 5")
+    FRIDAY = ("FRI", "Thứ 6")
+    SATURDAY = ("SAT", "Thứ 7")
+    SUNDAY = ("SUN", "Chủ nhật")
+
+    def __init__(self, value, label):
+        self._value_ = value
+        self.label = label
 
 class Session(Enum):
     MORNING   = ("Sáng",     "07:30", "12:00")
@@ -39,7 +43,7 @@ class Session(Enum):
         self.end_time = end
 
     def __str__(self):
-        return self.label
+        return f"{self.label} ({self.start_time} - {self.end_time})"
 
     @property
     def display(self):

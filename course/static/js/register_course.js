@@ -103,21 +103,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     const confirmBtn = document.getElementById('confirmBtn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', async () => {
-            try {
-                const res = await fetch('/api/register-course/confirm', { method: 'POST'});
-                const data = await res.json();
-                alert(data.success ? "Thành công: " + data.message : "Thất bại: " + data.message);
 
-                if (data.success) {
-                    window.location.reload();
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', async () => {
+                try {
+                    const res = await fetch('/api/register-course/confirm', {
+                        method: 'POST'
+                    });
+
+                    const data = await res.json();
+
+                    alert(data.success ? "Thành công: " + data.message : "Thất bại: " + data.message);
+
+                    if (data.success) {
+                        window.open(`/receipt/${data.semester_id}`, '_blank');
+                    }
+
+                } catch (err) {
+                    alert("Server error");
                 }
-            } catch (err) {
-                alert("Server error");
-            }
-        });
-    }
+            });
+        }
 
 
     document.querySelectorAll('.unregister-icon').forEach(icon => {
