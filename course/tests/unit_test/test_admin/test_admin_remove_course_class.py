@@ -1,10 +1,28 @@
 import pytest
 
 from course import dao
+from course.admin import CourseClassAdmin
+from course.exceptions import BusinessException
 
-from course.models import CourseClass, Registration, Semester, Room, Course
+from course.models import CourseClass, Registration, Semester, Room, Course, UserRole
 from course.services import course_management_service
-from course.tests.unit_test.test_base import test_app,test_session
+from course.tests.unit_test.test_base import test_app,test_session, test_client
+
+
+
+class FakeAdmin:
+    is_authenticated = True
+    role = UserRole.ADMIN
+
+class FakeUser:
+    is_authenticated = True
+    role = UserRole.USER
+
+class FakeUserNotLogin:
+    is_authenticated = False
+    role = UserRole.USER
+
+
 
 @pytest.fixture
 def sample_semester(test_session):
@@ -114,9 +132,46 @@ class TestRemoveCourseClassService:
         assert deleted is None
 
     def test_delete_course_class_has_registration(self, test_session, sample_course_class, sample_registration):
-        with pytest.raises(ValueError):
+        with pytest.raises(BusinessException):
             course_management_service.delete_course_class_service(test_session, sample_course_class.id)
 
     def test_delete_course_class_not_found(self,test_session):
         with pytest.raises(ValueError):
             course_management_service.delete_course_class_service(test_session, 9999)
+
+
+
+class TestRemoveCourseClassAuth:
+    def test_admin_access_allowed(self,monkeypatch):
+        monkeypatch.setattr(
+            "flask_login.utils._get_user",
+            lambda: FakeAdmin()
+        )
+
+        view = CourseClassAdmin(CourseClass, None)
+
+        assert view.is_accessible() is True
+
+    def test_admin_access_denied(self,monkeypatch):
+        monkeypatch.setattr(
+            "flask_login.utils._get_user",
+            lambda: FakeUser()
+        )
+        view = CourseClassAdmin(CourseClass, None)
+        assert view.is_accessible() is False
+
+    def test_admin_access_not_logged_in(self,monkeypatch):
+        monkeypatch.setattr(
+            "flask_login.utils._get_user",
+            lambda: FakeUserNotLogin()
+        )
+        view = CourseClassAdmin(CourseClass, None)
+        assert view.is_accessible() is False
+
+def test_delete_class_forbidden(test_client, monkeypatch):
+    monkeypatch.setattr(
+        "flask_login.utils._get_user",
+        lambda: FakeUser()
+    )
+    res = test_client.post("/admin/courseclass/delete/")
+    assert res.status_code == 403

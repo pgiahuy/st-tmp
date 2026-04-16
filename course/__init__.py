@@ -14,7 +14,11 @@ app.config["DEFAULT_PASSWORD"] = "Abc1234@"
 db = SQLAlchemy(app=app)
 login = LoginManager(app=app)
 
+from course import index, api
 from course import admin
+
+api.register_api(app)
+index.register_routes(app)
 
 
 cloudinary.config(

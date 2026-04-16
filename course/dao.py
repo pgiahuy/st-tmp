@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from course import db
 from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite, \
-    CourseClassSchedule, SystemConfig, ScheduleSlot
+    CourseClassSchedule, SystemConfig, ScheduleSlot, Room
 
 
 def hash_password(password):
@@ -147,11 +147,9 @@ def get_courses_by_current_reg_semester():
     return courses
 
 
-def get_config_value(key, default):
-    conf = SystemConfig.query.filter_by(key=key).first()
-    if conf:
-        return int(conf.value)
-    return default
+def get_config_value(key, default=None):
+    conf = SystemConfig.query.filter_by(key=key.value).first()
+    return int(conf.value) if conf else default
 
 
 def get_course_classes_for_student(student_id):
@@ -278,11 +276,12 @@ def change_password(user_id, new_password):
 def get_courses_by_id(course_id):
     return Course.query.get(course_id)
 
+def get_room__by_id(room_id):
+    return db.session.get(Room,room_id)
 
-def check_schedule_conflict(db_session, room_id, slot_ids, current_class_id=None):
-    semester_id = get_registration_semester().id
+def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=None):
 
-    query = db_session.query(CourseClass).join(
+    query = db.session.query(CourseClass).join(
         CourseClassSchedule,
         CourseClass.id == CourseClassSchedule.course_class_id
     ).join(
@@ -297,7 +296,7 @@ def check_schedule_conflict(db_session, room_id, slot_ids, current_class_id=None
     if current_class_id:
         query = query.filter(CourseClass.id != current_class_id)
 
-    new_slots = db_session.query(ScheduleSlot).filter(ScheduleSlot.id.in_(slot_ids)).all()
+    new_slots = db.session.query(ScheduleSlot).filter(ScheduleSlot.id.in_(slot_ids)).all()
 
     for ns in new_slots:
         conflict = query.filter(

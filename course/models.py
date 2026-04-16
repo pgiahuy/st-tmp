@@ -6,6 +6,11 @@ from enum import Enum
 from course import db, app
 
 
+class ConfigEnum(Enum):
+    MAX_CREDITS = "MAX_CREDITS"
+    MIN_CREDITS = "MIN_CREDITS"
+    MAX_STUDENTS_PER_CLASS = "MAX_STUDENTS_PER_CLASS"
+
 class UserRole(Enum):
     USER = (1, "Sinh viên")
     ADMIN = (2, "Quản trị viên")
@@ -46,7 +51,7 @@ class Base(db.Model):
     __abstract__ = True
     id = Column(Integer, primary_key=True, autoincrement=True)
     active = Column(Boolean, default=True)
-    created_date = Column(DateTime, default=datetime.now(UTC))
+    created_date = Column(DateTime, default=func.now())
     def __str__(self):
         return getattr(self, "name", str(self.id))
 
@@ -169,7 +174,7 @@ class Registration(Base):
     course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     semester_id = Column(Integer, ForeignKey("semesters.id"))
 
-    registered_at = Column(DateTime, default=func.now(UTC))
+    registered_at = Column(DateTime, default=func.now())
     midterm_score = Column(Double, nullable=True)
     __table_args__ = (
         db.UniqueConstraint('student_id', 'course_class_id', name='unique_registration'),

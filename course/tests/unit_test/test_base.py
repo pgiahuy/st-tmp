@@ -1,8 +1,9 @@
 import pytest
 from flask import Flask
-from course import db, index
+from flask_login import LoginManager
 
-
+from course import db, index, api
+from course.admin import admin
 
 
 def create_app():
@@ -12,8 +13,20 @@ def create_app():
     app.config['TESTING'] = True
     app.secret_key = 'hduageifghegehsghe8ghe8ghe89ye8a9y'
     db.init_app(app)
+    admin.init_app(app)
+    index.register_routes(app)
+    api.register_api(app)
 
-    # index.register_routes(app=app)
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return type("User", (), {
+            "id": user_id,
+            "username": "test",
+            "is_authenticated": True
+        })()
 
     return app
 
@@ -47,3 +60,6 @@ def mock_cloudinary(monkeypatch):
         return {'secure_url':'https://img.png'}
 
     monkeypatch.setattr('cloudinary.uploader.upload', fake_upload)
+
+
+

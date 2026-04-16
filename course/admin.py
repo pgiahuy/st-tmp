@@ -146,10 +146,11 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         slot_ids = [s.id for s in selected_slots]
         class_id = model.id if not is_created else None
 
-        result = course_management_service.validate_schedule_conflict(
+        result = course_management_service.validate_course_class(
             db.session,
             room,
             slot_ids,
+            model.max_students,
             class_id
         )
 
