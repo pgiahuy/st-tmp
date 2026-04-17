@@ -1,5 +1,4 @@
 import io
-from email.contentmanager import set_message_content
 
 from flask import request, jsonify
 from flask_login import login_required, current_user

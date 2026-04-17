@@ -81,8 +81,8 @@ def cancel_registration(semester_id, student_id, course_class_id):
     if reg.semester.start_date and now > reg.semester.start_date + timedelta(days=14):
         raise BusinessException("Không được huỷ môn sau 2 tuần bắt đầu học kỳ!")
 
-    if reg.midterm_score is not None:
+    if reg.is_midterm_tested is True:
         raise BusinessException("Không được huỷ sau khi đã thi giữa kỳ")
 
-    dao.delete_registration(reg)
+    dao.student_cancel_registration(reg)
     return True

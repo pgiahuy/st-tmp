@@ -1,14 +1,24 @@
+import pytest
+from flask_login import utils
+
 from course.exceptions import BusinessException
+from course.models import UserRole
 from course.tests.unit_test.test_base import test_app,test_client
 
+@pytest.fixture(autouse=True)
+def mock_current_user(monkeypatch):
 
-def login(client, user_id="1"):
-    with client.session_transaction() as sess:
-        sess["_user_id"] = user_id
+    user = type("User", (), {
+        "id": 1,
+        "username": "2351050061",
+        "role": UserRole.USER,
+        "is_authenticated": True
+    })()
+    monkeypatch.setattr(utils, "_get_user", lambda: user)
+
 
 
 def test_cancel_success(test_client, monkeypatch):
-    login(test_client)
     monkeypatch.setattr("course.dao.get_student_by_mssv", lambda m: type("S", (), {"id": 1})())
     monkeypatch.setattr("course.dao.get_registration_semester", lambda: type("S", (), {"id": 1})())
 
@@ -24,7 +34,6 @@ def test_cancel_success(test_client, monkeypatch):
 
 
 def test_cancel_fail_unregistered(test_client, monkeypatch):
-    login(test_client)
 
     monkeypatch.setattr("course.dao.get_student_by_mssv",
                          lambda m: type("S", (), {"id": 1})())
@@ -42,7 +51,6 @@ def test_cancel_fail_unregistered(test_client, monkeypatch):
 
 
 def test_cancel_fail_after_2_week(test_client, monkeypatch):
-    login(test_client)
     monkeypatch.setattr("course.dao.get_student_by_mssv",
                         lambda m: type("S", (), {"id": 1})())
 
@@ -59,7 +67,6 @@ def test_cancel_fail_after_2_week(test_client, monkeypatch):
 
 
 def test_cancel_fail_middle_term(test_client, monkeypatch):
-    login(test_client)
 
     monkeypatch.setattr("course.dao.get_student_by_mssv",
                         lambda m: type("S", (), {"id": 1})())

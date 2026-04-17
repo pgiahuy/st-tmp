@@ -1,5 +1,7 @@
+from unittest.mock import patch
 
 import pytest
+from flask_login import current_user
 
 from course.admin import CourseClassAdmin
 from course.exceptions import BusinessException
@@ -178,9 +180,8 @@ def test_fail_max_room_capacity(test_session, monkeypatch, sample_semester, samp
 
     assert "Số sinh viên tối đa là" in str(e.value)
 
-
-class TestCreateCourseClassAuth:
-    def test_admin_access_allowed(self, monkeypatch):
+class TestRemoveCourseClassAuth:
+    def test_admin_access_allowed(self,monkeypatch):
         monkeypatch.setattr(
             "flask_login.utils._get_user",
             lambda: FakeAdmin()
@@ -207,11 +208,50 @@ class TestCreateCourseClassAuth:
         assert view.is_accessible() is False
 
 
+from course.models import UserRole
 
 def test_create_class_forbidden(test_client, monkeypatch):
+
+    with test_client.session_transaction() as sess:
+        sess["_user_id"] = "1"
+        sess["_fresh"] = True
+
+    monkeypatch.setattr(
+        "course.index.render_template",
+        lambda *args, **kwargs: ""
+    )
+
     monkeypatch.setattr(
         "flask_login.utils._get_user",
-        lambda: FakeUser()
+        lambda: type("User", (), {
+            "is_authenticated": True,
+            "role": UserRole.USER
+        })()
     )
-    res = test_client.get("/admin/courseclass/new/")
+
+    res = test_client.post("/admin/courseclass/new/")
+
     assert res.status_code == 403
+
+def test_create_class_success(test_client, monkeypatch):
+    with test_client.session_transaction() as sess:
+        sess["_user_id"] = "1"
+        sess["_fresh"] = True
+    monkeypatch.setattr(
+        "flask_login.utils._get_user",
+        lambda: type("User", (), {
+            "is_authenticated": True,
+            "role": UserRole.ADMIN
+        })()
+    )
+    form_data = {
+        "class_code": "PY-101",
+        "course_id": 1,
+        "room_id": 1,
+        "max_students": 30,
+        "semester_id": 1
+    }
+
+    res = test_client.post("/admin/courseclass/new/", data=form_data)
+
+    assert res.status_code == 302

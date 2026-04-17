@@ -1,3 +1,4 @@
+import markupsafe
 from flask import url_for, request, abort
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
@@ -6,7 +7,7 @@ from flask_admin.form import DatePickerWidget
 from flask_login import current_user
 from werkzeug.utils import redirect
 from wtforms.fields.datetime import DateField
-from wtforms.validators import ValidationError
+from wtforms.validators import ValidationError, DataRequired, NumberRange
 
 import course.utils
 from course import app, db, dao, utils, services
@@ -27,7 +28,6 @@ class AdminAccessMixin:
         return abort(403)
 
 
-
 class MyAdminHome(AdminAccessMixin, AdminIndexView):
     pass
 
@@ -38,21 +38,18 @@ class MyAdminModelView(AdminAccessMixin, ModelView):
     can_delete = True
 
 
-
 class UserAdmin(AdminAccessMixin, ModelView):
-    column_list = ('username', 'active','role','created_date' )
-    form_excluded_columns = ('student', 'created_date','role')
-    column_labels = {'role':'Vai trò'}
+    column_list = ('username', 'active', 'role', 'created_date')
+    form_excluded_columns = ('student', 'created_date', 'role')
+    column_labels = {'role': 'Vai trò'}
 
     def on_model_change(self, form, model, is_created):
         if is_created:
             model.password = dao.hash_password(model.password)
 
 
-
 class StudentAdmin(AdminAccessMixin, ModelView):
-
-    form_excluded_columns = ['registrations','created_date','user','active']
+    form_excluded_columns = ['registrations', 'created_date', 'user', 'active']
 
     column_labels = {
         'mssv': 'Mã số sinh viên',
@@ -73,13 +70,11 @@ class StudentAdmin(AdminAccessMixin, ModelView):
 
 
 class CourseAdmin(AdminAccessMixin, ModelView):
-
     column_labels = {
         'course_code': 'Mã MH',
         'course_name': 'Tên MH',
         'credits': 'Số tín chỉ ',
     }
-
 
 
 class CourseClassAdmin(AdminAccessMixin, ModelView):
@@ -96,109 +91,169 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         'class_code': 'Mã lớp',
         'course': 'Môn học',
         'room': 'Phòng học',
+        'semester': 'Học kỳ',
         'max_students': 'Sĩ số tối đa',
         'schedule_associations': 'Lịch học'
     }
 
+    def _student_count_formatter(view, context, model, name):
+        current_count = dao.count_course_registrations(model.id)
+        max_val = model.max_students or 1
+
+        color_class = "badge badge-success"
+        if current_count == max_val and max_val > 0:
+            color_class = "badge badge-danger"
+        elif current_count >= (max_val * 0.8):
+            color_class = "badge badge-warning"
+
+        return markupsafe.Markup(
+            f'<span class="{color_class}" style="font-size: 90%; padding: 5px 10px;">'
+            f'{current_count} / {max_val}'
+            f'</span>'
+        )
+
     column_formatters = {
 
-        'schedule_associations': lambda v, c, m, p: ", ".join([
-        f"{a.slot.weekday.value} - {a.slot.session.value}"
-        for a in m.schedule_associations if a.slot
-    ]) if m.schedule_associations else "Chưa xếp lịch",
+        'schedule_associations': lambda v, c, m, p: markupsafe.Markup("<br>".join([
+            f"<b>{a.slot.weekday.label}</b>: {a.slot.session}"
+            for a in m.schedule_associations if a.slot
+        ])) if m.schedule_associations else markupsafe.Markup('<span class="label label-default">Chưa xếp lịch</span>'),
 
-        'course': lambda v, c, m, p: f"{m.course.course_code} - {m.course.course_name}" if m.course else "N/A"
+        'course': lambda v, c, m, p: f"{m.course.course_code} - {m.course.course_name}" if m.course else "N/A",
+
+        'max_students': _student_count_formatter
     }
 
     form_args = {
         'course': {
             'label': 'Môn học',
             'query_factory': lambda: Course.query.all(),
-            'get_label': lambda c: f"{c.course_code} - {c.course_name}"
+            'get_label': lambda c: f"{c.course_code} - {c.course_name}",
+            'validators': [DataRequired(message="Vui lòng chọn môn học")]
         },
+        'max_students': {
+            'validators': [
+                DataRequired(message="Vui lòng nhập sĩ số tối đa"),
+                NumberRange(min=1, message="Sĩ số không được < 0")
+
+            ]
+        },
+        'room': {
+            'validators': [DataRequired(message="Vui lòng chọn phòng học")]
+        },
+        'semester': {
+            'validators': [DataRequired(message="Vui lòng chọn học kỳ")]
+        },
+        'class_code': {
+            'validators': [DataRequired(message="Vui lòng nhập mã lớp")]
+        }
 
     }
 
-    form_excluded_columns = ('schedule_associations','registrations','created_date')
+    form_excluded_columns = ('schedule_associations', 'registrations', 'created_date', 'active')
 
     form_extra_fields = {
         'slots_picker': QuerySelectMultipleField(
-            'Chọn Lịch Học',
+            'Chọn lịch học',
             query_factory=lambda: ScheduleSlot.query.all(),
-            get_label=lambda s: f"{s.weekday.label} - {s.session}"
+            get_label=lambda s: f"{s.weekday.label} - {s.session}",
+            validators=[DataRequired(message="Vui lòng chọn ít nhất 1 lịch học")]
         )
     }
-
-
-
 
     column_searchable_list = ['class_code']
     column_filters = ['room.name', 'course.course_name', 'semester']
 
-
-
     def on_model_change(self, form, model, is_created):
-        selected_slots = form.slots_picker.data
         room = form.room.data
-
-        print("======================")
-        print(room.id, room.name)
+        selected_slots = form.slots_picker.data
 
         if not selected_slots or not room:
             return
 
         slot_ids = [s.id for s in selected_slots]
         class_id = model.id if not is_created else None
-
+        print("ADMIN TYPE MAXSTUYDENR++++++")
+        print(type(form.max_students.data))
         try:
-            result = course_management_service.validate_course_class(
-                db.session,
-                room.id,
-                slot_ids,
-                model.max_students,
-                class_id
+            model.schedule_associations = course_management_service.handle_course_class_change_service(
+                user_role=current_user.role,
+                semester_id=form.semester.data.id,
+                room_id=room.id,
+                slot_ids=slot_ids,
+                max_students=form.max_students.data,
+                selected_slots_objects=selected_slots,
+                model=model,
+                class_id=class_id
             )
 
-            if result:
-                conflict = result["conflict"]
-                slot = result["slot"]
-
-                time_info = (
-                    "Không xác định"
-                    if not slot
-                    else f"{slot.weekday.value} ({slot.session.label})"
-                )
-
-                raise ValidationError(
-                    f"Trùng lịch: Phòng {room.name} đã được sử dụng "
-                    f"bởi lớp '{conflict.class_code}' vào {time_info}"
-                )
-
-        except Exception as e:
+        except (BusinessException, ValueError) as e:
             raise ValidationError(str(e))
 
-        model.schedule_associations = course_management_service.build_schedule_associations(
-            model,
-            selected_slots
-        )
+        except Exception as e:
+            raise ValidationError(f"Lỗi hệ thống: {str(e)}")
+
+    # def on_model_change(self, form, model, is_created):
+    #     selected_slots = form.slots_picker.data
+    #     room = form.room.data
+    #
+    #     print("======================")
+    #     print(room.id, room.name)
+    #
+    #     if not selected_slots or not room:
+    #         return
+    #
+    #     slot_ids = [s.id for s in selected_slots]
+    #     class_id = model.id if not is_created else None
+    #
+    #     try:
+    #         result = course_management_service.validate_course_class(
+    #             room.id,
+    #             slot_ids,
+    #             model.max_students,
+    #             class_id
+    #         )
+    #
+    #         if result:
+    #             conflict = result["conflict"]
+    #             slot = result["slot"]
+    #
+    #             time_info = (
+    #                 "Không xác định"
+    #                 if not slot
+    #                 else f"{slot.weekday.value} ({slot.session.label})"
+    #             )
+    #
+    #             raise ValidationError(
+    #                 f"Trùng lịch: Phòng {room.name} đã được sử dụng "
+    #                 f"bởi lớp '{conflict.class_code}' vào {time_info}"
+    #             )
+    #
+    #     except Exception as e:
+    #         raise ValidationError(str(e))
+    #
+    #     model.schedule_associations = course_management_service.build_schedule_associations(
+    #         model,
+    #         selected_slots
+    #     )
 
     def on_model_delete(self, model):
-        course_management_service.delete_course_class_service(
-            model.id,
-            db.session
-        )
-
+        try:
+            course_management_service.delete_course_class_service(current_user.role, model.id)
+        except Exception as e:
+            raise ValidationError(str(e))
 
 
 class ScheduleSlotAdmin(AdminAccessMixin, ModelView):
     pass
+
 
 class RegistrationAdmin(AdminAccessMixin, ModelView):
     pass
 
 
 class SemesterAdmin(AdminAccessMixin, ModelView):
-    column_list = ('id', 'name', 'year', 'start_date', 'start_registration_date', 'end_registration_date','end_date')
+    column_list = ('id', 'name', 'year', 'start_date', 'start_registration_date', 'end_registration_date', 'end_date')
 
     column_searchable_list = ('name', 'year')
 
@@ -228,6 +283,7 @@ class RoomAdmin(AdminAccessMixin, ModelView):
         'capacity': 'Chỗ ngồi sinh viên'
     }
 
+
 class RuleAdmin(AdminAccessMixin, ModelView):
     form_excluded_columns = ['created_date']
 
@@ -239,15 +295,14 @@ class RuleAdmin(AdminAccessMixin, ModelView):
     }
 
 
-admin = Admin(app,name='Admin',index_view=MyAdminHome(name='TRANG CHỦ'))
-admin.add_view(CourseAdmin(Course, db.session,name='MÔN HỌC'))
-admin.add_view(StudentAdmin(Student, db.session,name='SINH VIÊN'))
-admin.add_view(UserAdmin(User, db.session,name='TÀI KHOẢN'))
-admin.add_view(CourseClassAdmin(CourseClass, db.session,name='LỚP'))
-admin.add_view(RegistrationAdmin(Registration, db.session,name='ĐĂNG KÝ'))
-admin.add_view(ScheduleSlotAdmin(ScheduleSlot, db.session,name='BUỔI HỌC'))
+admin = Admin(app, name='Admin', index_view=MyAdminHome(name='TRANG CHỦ'))
+admin.add_view(CourseAdmin(Course, db.session, name='MÔN HỌC'))
+admin.add_view(StudentAdmin(Student, db.session, name='SINH VIÊN'))
+admin.add_view(UserAdmin(User, db.session, name='TÀI KHOẢN'))
+admin.add_view(CourseClassAdmin(CourseClass, db.session, name='LỚP'))
+admin.add_view(RegistrationAdmin(Registration, db.session, name='ĐĂNG KÝ'))
+admin.add_view(ScheduleSlotAdmin(ScheduleSlot, db.session, name='BUỔI HỌC'))
 
-admin.add_view(SemesterAdmin(Semester, db.session,name='HỌC KỲ'))
-admin.add_view(RoomAdmin(Room, db.session,name='PHÒNG HỌC'))
-admin.add_view(RuleAdmin(SystemConfig, db.session,name='QUY ĐỊNH'))
-
+admin.add_view(SemesterAdmin(Semester, db.session, name='HỌC KỲ'))
+admin.add_view(RoomAdmin(Room, db.session, name='PHÒNG HỌC'))
+admin.add_view(RuleAdmin(SystemConfig, db.session, name='QUY ĐỊNH'))

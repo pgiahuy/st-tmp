@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from course import dao
@@ -168,10 +170,44 @@ class TestRemoveCourseClassAuth:
         view = CourseClassAdmin(CourseClass, None)
         assert view.is_accessible() is False
 
-def test_delete_class_forbidden(test_client, monkeypatch):
+
+def test_create_class_forbidden_v2(monkeypatch,test_client):
+
+    with test_client.session_transaction() as sess:
+        sess["_user_id"] = "1"
+        sess["_fresh"] = True
+
+    monkeypatch.setattr(
+        "course.index.render_template",
+        lambda *args, **kwargs: ""
+    )
+
     monkeypatch.setattr(
         "flask_login.utils._get_user",
-        lambda: FakeUser()
+        lambda: type("User", (), {
+            "is_authenticated": True,
+            "role": UserRole.USER
+        })()
     )
     res = test_client.post("/admin/courseclass/delete/")
+
     assert res.status_code == 403
+
+
+def test_delete_class_success(test_client, monkeypatch):
+    with test_client.session_transaction() as sess:
+        sess["_user_id"] = "1"
+        sess["_fresh"] = True
+
+    monkeypatch.setattr(
+        "flask_login.utils._get_user",
+        lambda: type("User", (), {
+            "is_authenticated": True,
+            "role": UserRole.ADMIN
+        })()
+    )
+
+    res = test_client.post("/admin/courseclass/delete/")
+
+    assert res.status_code == 302
+    assert "/admin/courseclass/" in res.location

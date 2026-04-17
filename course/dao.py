@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from course import db
 from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite, \
-    CourseClassSchedule, SystemConfig, ScheduleSlot, Room
+    CourseClassSchedule, SystemConfig, ScheduleSlot, Room, RegistrationStatus
 
 
 def hash_password(password):
@@ -28,7 +28,7 @@ def get_courses():
     return Course.query.order_by(Course.course_name).all()
 
 def get_course_classes_student_registered(semester_id, student_id):
-    regis = Registration.query.filter_by(semester_id=semester_id, student_id=student_id).all()
+    regis = Registration.query.filter_by(semester_id=semester_id, student_id=student_id, status = RegistrationStatus.REGISTERED).all()
     if not regis:
         return []
     regis_ids = [reg.course_class_id for reg in regis ]
@@ -36,7 +36,7 @@ def get_course_classes_student_registered(semester_id, student_id):
     return CourseClass.query.filter(CourseClass.id.in_(regis_ids)).all()
 
 def get_course_class_ids_student_registered(semester_id, student_id):
-    regis = Registration.query.filter_by(semester_id=semester_id, student_id=student_id).all()
+    regis = Registration.query.filter_by(semester_id=semester_id, student_id=student_id, status = RegistrationStatus.REGISTERED).all()
     if not regis:
         return []
     return [reg.course_class_id for reg in regis ]
@@ -104,7 +104,8 @@ def get_conflicting_class(student_id, course_class_id, reg_semester_id):
 
     registered_registrations = Registration.query.filter_by(
         student_id=student_id,
-        semester_id=reg_semester_id
+        semester_id=reg_semester_id,
+        status = RegistrationStatus.REGISTERED
     ).all()
 
     for reg in registered_registrations:
@@ -134,9 +135,10 @@ def check_not_yet_studied(semester_id ,student_id, course_class_id):
 
 def course_class_is_full(course_class_id):
     course_class = get_course_class_by_id(course_class_id)
-    count = db.session.query(Registration).filter_by(course_class_id=course_class_id).count()
+    count = db.session.query(Registration).filter_by(course_class_id=course_class_id, status = RegistrationStatus.REGISTERED).count()
     return count >= course_class.max_students
 
+# all lớp trong kì
 def get_courses_by_current_reg_semester():
     semester = get_registration_semester()
     if not semester:
@@ -183,10 +185,10 @@ def get_registration_semester():
 def get_total_credits(student_id, semester_id):
     student = get_student_by_id(student_id)
     total = 0
-    for reg in student.registrations:
-        if reg.semester_id == semester_id:
-            if reg.course_class and reg.course_class.course:
-                total += reg.course_class.course.credits
+    registered_classes = get_course_classes_student_registered(semester_id, student_id)
+    for course_class in registered_classes:
+        if course_class.semester_id == semester_id and course_class.course:
+            total += course_class.course.credits
     return total
 
 
@@ -211,8 +213,9 @@ def get_registration(student_id, course_class_id, semester_id):
     ).first()
 
 
-def delete_registration(reg):
-    db.session.delete(reg)
+def student_cancel_registration(reg):
+    reg.status = RegistrationStatus.STUDENT_CANCELLED
+    reg.updated_at = datetime.now()
     db.session.commit()
 
 
@@ -238,12 +241,10 @@ def get_all_student_studied(semester_id , student_id):
 def check_duplicate_in_semester(semester_id ,student_id, course_class_id):
 
     course_id = get_course_class_by_id(course_class_id).course.id
-
-    student = get_student_by_id(student_id)
-    for reg in student.registrations:
-        if reg.semester_id != semester_id:
-            continue
-        existing_course_id = get_course_class_by_id(reg.course_class_id).course.id
+    student_registered = get_course_classes_student_registered(semester_id,student_id)
+    
+    for c in student_registered:
+        existing_course_id = c.course.id
         if existing_course_id == course_id:
             return True
     return False
@@ -310,24 +311,36 @@ def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=N
     return None
 
 
-def count_course_registrations(session, course_class_id):
-    return session.query(Registration).filter_by(course_class_id=course_class_id).count()
+def count_course_registrations( course_class_id):
+    return db.session.query(Registration).filter_by(course_class_id=course_class_id, status = RegistrationStatus.REGISTERED).count()
 
 
-def delete_course_class(session, course_class):
-    session.delete(course_class)
-    session.commit()
+def delete_course_class(course_class):
+    db.session.delete(course_class)
+    db.session.commit()
+
+
 
 def register_course(semester_id, student_id, course_class_id):
+    reg = get_registration(student_id, course_class_id, semester_id)
     try:
-        reg = Registration(
-            student_id=student_id,
-            course_class_id=course_class_id,
-            semester_id=semester_id
-        )
-        db.session.add(reg)
+        if reg is not None:
+            reg.status = RegistrationStatus.REGISTERED
+            reg.updated_at = datetime.now()
+        else:
+            reg = Registration(
+                student_id=student_id,
+                course_class_id=course_class_id,
+                semester_id=semester_id,
+                status=RegistrationStatus.REGISTERED,
+                created_date=datetime.now(),
+                updated_at=datetime.now()
+            )
+            db.session.add(reg)
+
         db.session.commit()
         return reg
+
     except Exception:
         db.session.rollback()
         raise

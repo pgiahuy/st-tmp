@@ -1,5 +1,6 @@
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum as SQLEnum, DateTime, func, Double
+from sqlalchemy.engine import default
 from sqlalchemy.orm import relationship
 from datetime import datetime, UTC
 from enum import Enum
@@ -31,6 +32,12 @@ class Day(Enum):
     def __init__(self, value, label):
         self._value_ = value
         self.label = label
+
+
+class RegistrationStatus(Enum):
+    REGISTERED = "REGISTERED"
+    STUDENT_CANCELLED = "STUDENT_CANCELLED",
+    SYSTEM_CANCELLED = "SYSTEM_CANCELLED"
 
 class Session(Enum):
     MORNING   = ("Sáng",     "07:30", "12:00")
@@ -138,7 +145,7 @@ class CourseClass(Base):
 
     @property
     def current_size(self):
-        return len(self.registrations)
+        return sum(1 for reg in self.registrations if reg.status == RegistrationStatus.REGISTERED)
 
 class ScheduleSlot(Base): #ca học
     __tablename__ = "schedule_slots"
@@ -177,9 +184,11 @@ class Registration(Base):
     student_id = Column(Integer, ForeignKey("students.id"))
     course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     semester_id = Column(Integer, ForeignKey("semesters.id"))
+    updated_at = Column(DateTime)
+    status = Column(SQLEnum(RegistrationStatus), default=RegistrationStatus.REGISTERED)
 
     registered_at = Column(DateTime, default=func.now())
-    midterm_score = Column(Double, nullable=True)
+    is_midterm_tested = Column(Boolean,default=False)
     __table_args__ = (
         db.UniqueConstraint('student_id', 'course_class_id', name='unique_registration'),
     )

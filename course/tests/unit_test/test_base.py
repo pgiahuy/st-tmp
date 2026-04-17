@@ -1,9 +1,10 @@
 import pytest
 from flask import Flask
-from flask_login import LoginManager
+from flask_login import LoginManager, login_manager
 
 from course import db, index, api
 from course.admin import admin
+from course.models import UserRole, User
 
 
 def create_app():
@@ -22,11 +23,7 @@ def create_app():
 
     @login_manager.user_loader
     def load_user(user_id):
-        return type("User", (), {
-            "id": user_id,
-            "username": "test",
-            "is_authenticated": True
-        })()
+        return User.query.get(user_id)
 
     return app
 
@@ -35,13 +32,17 @@ def create_app():
 def test_app():
     app = create_app()
 
-    with app.app_context():
-        db.create_all()
-        yield app
-        db.drop_all()
-        db.engine.dispose()
+    ctx = app.app_context()
+    ctx.push()
 
+    db.create_all()
 
+    yield app
+
+    db.session.remove()
+    db.drop_all()
+
+    ctx.pop()
 
 @pytest.fixture
 def test_session(test_app):
