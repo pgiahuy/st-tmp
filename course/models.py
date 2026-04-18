@@ -171,7 +171,7 @@ class Semester(Base):
     year = Column(Integer)
     start_date = Column(db.Date)
     end_date = Column(db.Date)
-
+    is_auto_cancelled = Column(db.Boolean, default=False)
     start_registration_date = Column(db.Date)
     end_registration_date = Column(db.Date)
 
@@ -185,6 +185,7 @@ class Registration(Base):
     course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     semester_id = Column(Integer, ForeignKey("semesters.id"))
     updated_at = Column(DateTime)
+    pre_status = Column(SQLEnum(RegistrationStatus), default=RegistrationStatus.REGISTERED)
     status = Column(SQLEnum(RegistrationStatus), default=RegistrationStatus.REGISTERED)
 
     registered_at = Column(DateTime, default=func.now())

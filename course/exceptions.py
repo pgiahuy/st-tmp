@@ -17,3 +17,8 @@ class UserNotFoundException(BusinessException):
 class InvalidOldPasswordException(BusinessException):
     def __init__(self):
         super().__init__("INVALID_OLD_PASSWORD", "Mật khẩu cũ không đúng")
+
+
+class PermissionDeniedException(BusinessException):
+    def __init__(self):
+        super().__init__("PERMISSION_DENIED", "Không có quyền thực hiện thao tác")

@@ -1,3 +1,4 @@
+apscheduler
 pytest-mock
 blinker==1.9.0
 certifi==2026.2.25

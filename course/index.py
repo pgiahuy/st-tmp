@@ -19,7 +19,7 @@ def register_routes(app):
         if current_user.role == UserRole.ADMIN:
             if request.path == '/':
                 return
-            allowed_paths = ['/admin', '/logout', '/login', '/static']
+            allowed_paths = ['/admin', '/logout', '/login', '/static', "/api/admin"]
 
             if any(request.path.startswith(p) for p in allowed_paths):
                 return

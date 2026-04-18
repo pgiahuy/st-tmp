@@ -1,5 +1,5 @@
 from course import dao
-from course.exceptions import BusinessException
+from course.exceptions import BusinessException, PermissionDeniedException
 from course.models import CourseClassSchedule, ConfigEnum, UserRole
 
 
@@ -13,7 +13,7 @@ def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids,
 
 
     if user_role != UserRole.ADMIN:
-        raise BusinessException("Bạn không có quyền thực hiện thao tác này.")
+        raise PermissionDeniedException()
 
     result = validate_course_class(
         semester_id,
@@ -33,13 +33,16 @@ def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids,
             f"Trùng lịch: Phòng đã được sử dụng bởi lớp '{conflict.class_code}' vào {time_info}"
         )
 
-    return build_schedule_associations(model, selected_slots_objects)
+    return [
+            CourseClassSchedule(course_class=model, slot=s)
+            for s in selected_slots_objects
+        ]
 
 
 
 def delete_course_class_service(user_role,course_class_id):
     if user_role != UserRole.ADMIN:
-        raise BusinessException("Bạn không có quyền thực hiện thao tác này.")
+        raise PermissionDeniedException()
     count = dao.count_course_registrations(course_class_id)
 
     if count > 0:
@@ -105,8 +108,3 @@ def validate_schedule_conflict(semester_id,room, slot_ids, course_class_id):
         "slot": conflicting_slot
     }
 
-def build_schedule_associations(course_class, slots):
-    return [
-        CourseClassSchedule(course_class=course_class, slot=s)
-        for s in slots
-    ]

@@ -1,3 +1,5 @@
+import hashlib
+
 import pytest
 
 from course.dao import auth_user, hash_password, validate_auth
@@ -11,6 +13,17 @@ def sample_user(test_session):
     test_session.add(user)
     test_session.commit()
     return user
+
+class TestHashPassword:
+    def test_hash_password(self, test_session):
+        plan_1 = hash_password("Abc1234@")
+        plan_2 = hashlib.md5("Abc1234@".strip().encode('utf-8')).hexdigest()
+
+        assert plan_1 == plan_2
+
+    def test_hash_password_none(self, test_session):
+        plan_1 = hash_password()
+        assert plan_1 is None
 
 class TestValidateAuth:
 

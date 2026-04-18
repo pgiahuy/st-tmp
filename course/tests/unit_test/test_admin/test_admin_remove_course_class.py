@@ -4,7 +4,7 @@ import pytest
 
 from course import dao
 from course.admin import CourseClassAdmin
-from course.exceptions import BusinessException
+from course.exceptions import BusinessException, PermissionDeniedException
 
 from course.models import CourseClass, Registration, Semester, Room, Course, UserRole
 from course.services import course_management_service
@@ -112,15 +112,15 @@ def sample_registration(test_session, sample_course_class):
 class TestCountCourseRegistrations:
 
     def test_count_course_registrations_not_exist(self,test_session, sample_course_class):
-        count = dao.count_course_registrations(test_session, 999)
+        count = dao.count_course_registrations( 999)
         assert count == 0
 
     def test_count_course_registrations_true(self,test_session, sample_registration, sample_course_class):
-        count = dao.count_course_registrations(test_session, sample_course_class.id)
+        count = dao.count_course_registrations( sample_course_class.id)
         assert count == 2
 
     def test_count_course_registrations_true_zero(self,test_session, sample_registration, sample_course_class_none):
-        count = dao.count_course_registrations(test_session, sample_course_class_none.id)
+        count = dao.count_course_registrations( sample_course_class_none.id)
         assert count == 0
 
 
@@ -128,18 +128,24 @@ class TestCountCourseRegistrations:
 class TestRemoveCourseClassService:
 
     def test_delete_course_class_success(self, test_session, sample_course_class_none):
-        result = course_management_service.delete_course_class_service(test_session, sample_course_class_none.id)
+        result = course_management_service.delete_course_class_service(UserRole.ADMIN , sample_course_class_none.id)
         assert result is True
         deleted = dao.get_course_class_by_id(sample_course_class_none.id)
         assert deleted is None
 
     def test_delete_course_class_has_registration(self, test_session, sample_course_class, sample_registration):
         with pytest.raises(BusinessException):
-            course_management_service.delete_course_class_service(test_session, sample_course_class.id)
+            course_management_service.delete_course_class_service(UserRole.ADMIN    , sample_course_class.id)
 
     def test_delete_course_class_not_found(self,test_session):
-        with pytest.raises(ValueError):
-            course_management_service.delete_course_class_service(test_session, 9999)
+        with pytest.raises(ValueError) as e:
+            course_management_service.delete_course_class_service(UserRole.ADMIN, 9999)
+        assert "not found" in str(e)
+
+    def test_delete_course_class_not_permission(self,test_session,sample_course_class):
+        with pytest.raises(PermissionDeniedException) as e:
+            course_management_service.delete_course_class_service(UserRole.USER, sample_course_class.id)
+        assert "quyền" in str(e)
 
 
 

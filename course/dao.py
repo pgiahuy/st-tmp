@@ -5,10 +5,10 @@ from sqlalchemy.orm import joinedload
 
 from course import db
 from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite, \
-    CourseClassSchedule, SystemConfig, ScheduleSlot, Room, RegistrationStatus
+    CourseClassSchedule, SystemConfig, ScheduleSlot, Room, RegistrationStatus, ConfigEnum
 
 
-def hash_password(password):
+def hash_password(password = None):
     if not password:
         return None
     return hashlib.md5(password.strip().encode('utf-8')).hexdigest()
@@ -153,21 +153,29 @@ def get_config_value(key, default=None):
     conf = SystemConfig.query.filter_by(key=key.value).first()
     return int(conf.value) if conf else default
 
+def check_student_enough_credits_in_semester(semester_id , student_id):
 
-def get_course_classes_for_student(student_id):
-    student = get_student_by_id(student_id)
-    if not student:
-        return []
+    total = get_total_credits(student_id,semester_id)
+    if total >= get_config_value(ConfigEnum.MIN_CREDITS, 12):
+        return True
 
-    semester = get_current_semester()
-    registered_classes = db.session.query(CourseClass).join(Registration).filter(
-        Registration.student_id == student_id,
-        Registration.semester_id == semester.id
-    ).options(
-        joinedload(CourseClass.schedule_associations).joinedload(CourseClassSchedule.slot)
-    ).all()
+    return False
 
-    return registered_classes
+
+# def get_course_classes_for_student(student_id):
+#     student = get_student_by_id(student_id)
+#     if not student:
+#         return []
+#
+#     semester = get_current_semester()
+#     registered_classes = db.session.query(CourseClass).join(Registration).filter(
+#         Registration.student_id == student_id,
+#         Registration.semester_id == semester.id
+#     ).options(
+#         joinedload(CourseClass.schedule_associations).joinedload(CourseClassSchedule.slot)
+#     ).all()
+
+    # return registered_classes
 
 def get_current_semester():
     today = datetime.now()
@@ -183,7 +191,6 @@ def get_registration_semester():
 
 
 def get_total_credits(student_id, semester_id):
-    student = get_student_by_id(student_id)
     total = 0
     registered_classes = get_course_classes_student_registered(semester_id, student_id)
     for course_class in registered_classes:
@@ -214,10 +221,15 @@ def get_registration(student_id, course_class_id, semester_id):
 
 
 def student_cancel_registration(reg):
+    reg.pre_status = reg.status
     reg.status = RegistrationStatus.STUDENT_CANCELLED
     reg.updated_at = datetime.now()
     db.session.commit()
 
+def system_cancel_registration(reg):
+    if reg.status == RegistrationStatus.REGISTERED:
+        reg.pre_status = reg.status
+        reg.status = RegistrationStatus.SYSTEM_CANCELLED
 
 def get_semester_by_id(semester_id):
     return Semester.query.filter_by(id=semester_id).first()
@@ -273,9 +285,9 @@ def change_password(user_id, new_password):
 
     db.session.commit()
 
-
-def get_courses_by_id(course_id):
-    return Course.query.get(course_id)
+#
+# def get_courses_by_id(course_id):
+#     return Course.query.get(course_id)
 
 def get_room__by_id(room_id):
     return db.session.get(Room,room_id)
@@ -325,6 +337,7 @@ def register_course(semester_id, student_id, course_class_id):
     reg = get_registration(student_id, course_class_id, semester_id)
     try:
         if reg is not None:
+            reg.pre_status = reg.status
             reg.status = RegistrationStatus.REGISTERED
             reg.updated_at = datetime.now()
         else:
@@ -332,6 +345,7 @@ def register_course(semester_id, student_id, course_class_id):
                 student_id=student_id,
                 course_class_id=course_class_id,
                 semester_id=semester_id,
+                pre_status=RegistrationStatus.REGISTERED,
                 status=RegistrationStatus.REGISTERED,
                 created_date=datetime.now(),
                 updated_at=datetime.now()
@@ -344,5 +358,3 @@ def register_course(semester_id, student_id, course_class_id):
     except Exception:
         db.session.rollback()
         raise
-
-

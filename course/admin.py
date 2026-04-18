@@ -29,7 +29,13 @@ class AdminAccessMixin:
 
 
 class MyAdminHome(AdminAccessMixin, AdminIndexView):
-    pass
+    @expose('/')
+    def index(self):
+        print("===================")
+        print("ADMIN ROLEE==============", current_user.role)
+        return self.render('admin/index.html')
+
+
 
 
 class MyAdminModelView(AdminAccessMixin, ModelView):

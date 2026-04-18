@@ -21,9 +21,9 @@ def create_app():
     login_manager = LoginManager()
     login_manager.init_app(app)
 
-    @login_manager.user_loader
-    def load_user(user_id):
-        return User.query.get(user_id)
+    # @login_manager.user_loader
+    # def load_user(user_id):
+    #     return User.query.get(user_id)
 
     return app
 
@@ -31,18 +31,27 @@ def create_app():
 @pytest.fixture
 def test_app():
     app = create_app()
+    with app.app_context():
+        db.create_all()
 
-    ctx = app.app_context()
-    ctx.push()
+        yield app
 
-    db.create_all()
+        db.session.remove()
+        db.drop_all()
+        db.engine.dispose()
 
-    yield app
+#
+# @pytest.fixture
+# def test_app():
+#     app = create_app()
+#     ctx = app.app_context()
+#     ctx.push()
+#     db.create_all()
+#     yield app
+#     db.session.remove()
+#     db.drop_all()
+#     ctx.pop()
 
-    db.session.remove()
-    db.drop_all()
-
-    ctx.pop()
 
 @pytest.fixture
 def test_session(test_app):
@@ -50,17 +59,18 @@ def test_session(test_app):
     db.session.rollback()
 
 
+
 @pytest.fixture
 def test_client(test_app):
     return test_app.test_client()
 
 
-@pytest.fixture
-def mock_cloudinary(monkeypatch):
-    def fake_upload(file):
-        return {'secure_url':'https://img.png'}
-
-    monkeypatch.setattr('cloudinary.uploader.upload', fake_upload)
+# @pytest.fixture
+# def mock_cloudinary(monkeypatch):
+#     def fake_upload(file):
+#         return {'secure_url':'https://img.png'}
+#
+#     monkeypatch.setattr('cloudinary.uploader.upload', fake_upload)
 
 
 
