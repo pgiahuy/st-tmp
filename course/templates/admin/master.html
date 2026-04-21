@@ -124,6 +124,17 @@
 {{ super() }}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+    // Prevent stale admin pages from being restored via browser back/forward cache.
+    window.addEventListener('pageshow', function (event) {
+        const navEntries = performance.getEntriesByType('navigation');
+        const isBackForward = navEntries.length > 0 && navEntries[0].type === 'back_forward';
+
+        if (event.persisted || isBackForward) {
+            window.location.reload();
+        }
+    });
+</script>
+<script>
     $('#sidebarCollapse').on('click', function () {
         $('#sidebar').toggleClass('active');
         $('body').toggleClass('sidebar-collapsed');

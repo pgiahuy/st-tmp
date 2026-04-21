@@ -82,6 +82,18 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<script>
+    // Prevent showing stale authenticated pages when users navigate back/forward.
+    window.addEventListener('pageshow', function (event) {
+        const navEntries = performance.getEntriesByType('navigation');
+        const isBackForward = navEntries.length > 0 && navEntries[0].type === 'back_forward';
+
+        if (event.persisted || isBackForward) {
+            window.location.reload();
+        }
+    });
+</script>
+
 <script src="{{ url_for('static', filename='js/register_course.js') }}"></script>
 {% block extra_js %}{% endblock %}
 </body>
