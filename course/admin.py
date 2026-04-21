@@ -130,6 +130,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         'max_students': _student_count_formatter
     }
 
+
     form_args = {
         'course': {
             'label': 'Môn học',
@@ -140,7 +141,8 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         'max_students': {
             'validators': [
                 DataRequired(message="Vui lòng nhập sĩ số tối đa"),
-                NumberRange(min=1, message="Sĩ số không được < 0")
+                NumberRange(min=1, message="Sĩ số không được bé hơn 1"),
+                NumberRange(max=50, message="Sĩ số không được lớn hơn 50")
 
             ]
         },
@@ -155,6 +157,10 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         }
 
     }
+
+    extra_js = [
+        '/static/js/admin_create_course_class.js'
+    ]
 
     form_excluded_columns = ('schedule_associations', 'registrations', 'created_date', 'active')
 

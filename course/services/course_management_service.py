@@ -8,9 +8,6 @@ def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids,
     print("TYPEEEEE maxs_students=======")
     print(type(max_students), max_students)
 
-    if max_students < 1:
-        raise BusinessException("Sĩ số tối đa không thể nhỏ hơn 1.")
-
 
     if user_role != UserRole.ADMIN:
         raise PermissionDeniedException()
@@ -81,9 +78,15 @@ def validate_max_students(room, max_students):
 
     limit = min(max_limit, room.capacity)
 
+    min_slot = 1
+
     if max_students > limit:
         raise BusinessException(
             f"Số sinh viên tối đa là {limit} (do giới hạn lớp và phòng)"
+        )
+    if max_students < min_slot:
+        raise BusinessException(
+            f"Số sinh viên tối thiểu là {limit}"
         )
 
 # trùng lịch
