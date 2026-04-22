@@ -102,8 +102,13 @@ def register_routes(app):
     @login_required
     def my_profile():
         reg_semester = dao.get_registration_semester()
+        current_semester = dao.get_current_semester()
+
+        semester_for_view = current_semester or reg_semester
+        if not semester_for_view:
+            semester_for_view = dao.get_recent_past_semester()
         student = dao.get_student_by_mssv(current_user.username)
-        student_classes = dao.get_course_classes_student_registered(reg_semester.id, student.id)
+        student_classes = dao.get_course_classes_student_registered(semester_for_view.id, student.id)
 
         sum_credits = sum(c.course.credits for c in student_classes)
 
@@ -166,15 +171,23 @@ def register_routes(app):
             next_semester = dao.get_next_semester()
 
             if next_semester:
-                error_msg = f"Ngoài thời gian đăng ký! Quay lại vào {next_semester.start_registration_date}"
+                error_msg = f"Ngoài thời gian đăng ký! {next_semester.name} - {next_semester.year} mở vào {next_semester.start_registration_date}"
             else:
-                error_msg = "Hiện chưa có kỳ đăng ký nào!"
+                error_msg = "Ngoài thời gian đăng ký!"
 
             if preview_sem:
                 reg_semester = preview_sem
                 is_preview = True
             else:
-                return render_template('register_course.html', error=error_msg)
+                pass
+
+        current_semester = dao.get_current_semester()
+
+        semester_for_view = reg_semester or current_semester
+
+        if not semester_for_view:
+            return render_template('register_course.html', error=error_msg)
+
 
 
         kw = request.args.get('kw')
@@ -182,24 +195,23 @@ def register_routes(app):
 
         student = dao.get_student_by_mssv(current_user.username)
 
-        course_classes = dao.get_course_classes_in_reg_semester(semester_id= reg_semester.id, course_id=course_id, kw=kw)
-        courses = dao.get_courses_by_current_reg_semester(semester_id=reg_semester.id)
+        course_classes = dao.get_course_classes_in_reg_semester(semester_id= semester_for_view.id, course_id=course_id, kw=kw)
+        courses = dao.get_courses_by_current_reg_semester(semester_id=semester_for_view.id)
 
-        registered_ids = dao.get_course_class_ids_student_registered(semester_id=reg_semester.id, student_id=student.id)
+        registered_ids = dao.get_course_class_ids_student_registered(semester_id=semester_for_view.id, student_id=student.id)
 
-        registered_course_class = dao.get_course_classes_student_registered(semester_id=reg_semester.id,
+        registered_course_class = dao.get_course_classes_student_registered(semester_id=semester_for_view.id,
                                                                             student_id=student.id)
         print("========================")
         print(student.full_name)
-        print(reg_semester.name)
-        print(dao.get_course_classes_student_registered(student_id=student.id, semester_id=reg_semester.id))
+        print(semester_for_view.name)
+        print(dao.get_course_classes_student_registered(student_id=student.id, semester_id=semester_for_view.id))
 
         sum_credits = sum(c.course.credits for c in registered_course_class)
         print("&&&&&&&&&&&")
-        print("====reg_semester= =", reg_semester)
+        print("====reg_semester= =", semester_for_view)
 
         valid_regis = (not is_preview) and (reg_semester_tmp is not None)
-
         return render_template(
             'register_course.html',
             courses_in_reg_semester=courses,
@@ -208,7 +220,7 @@ def register_routes(app):
             sum_credits=sum_credits,
             registered_ids=registered_ids,
             registered_course_class=registered_course_class,
-            registration_semester=reg_semester,
+            registration_semester=semester_for_view,
             valid_regis=valid_regis,
             is_preview=is_preview,
             error=error_msg
@@ -218,10 +230,16 @@ def register_routes(app):
     @login_required
     def timetable_page():
         reg_semester = dao.get_registration_semester()
-        student = dao.get_student_by_mssv(current_user.username)
-        student_classes = dao.get_course_classes_student_registered(reg_semester.id, student.id)
+        current_semester = dao.get_current_semester()
 
-        semester_name = f"{reg_semester.name} - {reg_semester.year}"
+        semester_for_view = current_semester or reg_semester
+        if not semester_for_view:
+            semester_for_view = dao.get_recent_past_semester()
+
+        student = dao.get_student_by_mssv(current_user.username)
+        student_classes = dao.get_course_classes_student_registered(semester_for_view.id, student.id)
+
+        semester_name = f"{semester_for_view.name} - {semester_for_view.year}"
 
         days = [
             {"name": d.label, "value": d}

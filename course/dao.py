@@ -174,16 +174,16 @@ def check_student_enough_credits_in_semester(semester_id , student_id):
     # return registered_classes
 
 def get_current_semester():
-    today = datetime.now()
+    today = date.today()
     return Semester.query.filter(
         Semester.start_date <= today,
         Semester.end_date >= today
     ).first()
 
 def get_registration_semester():
-    today = datetime.now().date()
-    return (Semester.query.filter(Semester.start_registration_date <= today,
-                                 Semester.end_registration_date >= today).first())
+    now = date.today()
+    return (Semester.query.filter(Semester.start_registration_date <= now,
+                                 Semester.end_registration_date >= now).first())
 
 
 def get_total_credits(student_id, semester_id):
@@ -374,3 +374,10 @@ def get_review_registration_semester():
     ).order_by(
         Semester.start_registration_date.asc()
     ).first()
+
+def get_recent_past_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.end_date < now
+    ).order_by(Semester.end_date.desc()).first()

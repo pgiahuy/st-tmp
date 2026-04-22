@@ -3,7 +3,7 @@
 
 {% block content %}
 <div style="width:80%; margin:0 auto;">
-    <h3 class="mb-4 fw-bold mt-3">ĐĂNG KÝ MÔN HỌC</h3>
+    <h3 class="mb-4 fw-bold mt-3">ĐĂNG KÝ MÔN HỌC {%if registration_semester%}<small>| {{registration_semester.name}} - {{registration_semester.year}}{%endif%}</small></h3>
     {%if error or is_preview == True%}
     <div class="alert alert-danger d-flex align-items-center" role="alert">
         <i class="bi bi-exclamation-circle me-2"></i>
@@ -106,42 +106,47 @@
         <div class="{% if not valid_regis %}d-none{% endif %}">
             <hr class="mt-4">
 
-            <h3 class="mb-2 fw-bold mt-4 ">CÁC MÔN ĐÃ ĐĂNG KÝ</h3>
-            <p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
 
-            <table class="table table-bordered table-hover shadow-sm">
-                <thead class="table-header">
-                <tr class="text-center">
-                    <th>Mã lớp</th>
-                    <th>Môn học</th>
-                    <th>Tín chỉ</th>
-                    <th>Lịch học</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for c in registered_course_class %}
-                <tr class="text-center {% if c.is_full %}table-secondary{% endif %}">
-                    <td>{{ c.class_code }}</td>
-                    <td class="text-start ms-5">{{ c.course.course_name }}</td>
-
-                    <td>{{ c.course.credits }}</td>
-                    <td>
-                        {% for s in c.schedule_associations %}
-                        {{ s.slot.weekday.label }} - {{ s.slot.session }}<br>
-                        {% endfor %}
-                    </td>
-                    <td class="text-center">
-                        <i class="bi bi-x-square-fill unregister-icon"
-                           data-class-id="{{ c.id }}"
-                           style="cursor: pointer; color: red; font-size: 1.2rem;"
-                           title="Huỷ đăng ký"></i>
-                    </td>
-                </tr>
-                {% endfor %}
-                </tbody>
-            </table>
         </div>
+    </div>
+    <div class="{%if not registration_semester%} d-none{%endif%}">
+        <h3 class="mb-2 fw-bold mt-4 ">CÁC MÔN ĐÃ ĐĂNG KÝ</h3>
+        {%if registration_semester%}<p class="mb-2 ">{{registration_semester.name}} - {{registration_semester.year}}</p>{%endif%}
+
+        <p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
+
+        <table class="table table-bordered table-hover shadow-sm">
+            <thead class="table-header">
+            <tr class="text-center">
+                <th>Mã lớp</th>
+                <th>Môn học</th>
+                <th>Tín chỉ</th>
+                <th>Lịch học</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for c in registered_course_class %}
+            <tr class="text-center {% if c.is_full %}table-secondary{% endif %}">
+                <td>{{ c.class_code }}</td>
+                <td class="text-start ms-5">{{ c.course.course_name }}</td>
+
+                <td>{{ c.course.credits }}</td>
+                <td>
+                    {% for s in c.schedule_associations %}
+                    {{ s.slot.weekday.label }} - {{ s.slot.session }}<br>
+                    {% endfor %}
+                </td>
+                <td class="text-center">
+                    <i class="bi bi-x-square-fill unregister-icon"
+                       data-class-id="{{ c.id }}"
+                       style="cursor: pointer; color: red; font-size: 1.2rem;"
+                       title="Huỷ đăng ký"></i>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 

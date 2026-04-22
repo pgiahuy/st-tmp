@@ -85,7 +85,13 @@ def register_api(app):
                 "message": "Unauthorized"
             }), 401
         mssv = current_user.username
-        semester_id = dao.get_registration_semester().id
+        reg_semester = dao.get_registration_semester()
+        current_semester = dao.get_current_semester()
+
+        semester = reg_semester or current_semester
+
+        semester_id = semester.id
+
         student = dao.get_student_by_mssv(mssv)
         if not student:
             return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
