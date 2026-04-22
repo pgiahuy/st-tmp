@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
@@ -41,14 +41,12 @@ def get_course_class_ids_student_registered(semester_id, student_id):
         return []
     return [reg.course_class_id for reg in regis ]
 
-def get_course_classes_in_reg_semester(course_id=None, kw=None):
+def get_course_classes_in_reg_semester(semester_id= None, course_id=None, kw=None):
 
-    semester = get_registration_semester()
-    if not semester:
-        raise Exception('No semester found')
+
 
     query = CourseClass.query.filter(
-        CourseClass.semester_id == semester.id,
+        CourseClass.semester_id == semester_id,
         CourseClass.active == True
     )
 
@@ -139,12 +137,10 @@ def course_class_is_full(course_class_id):
     return count >= course_class.max_students
 
 # all lớp trong kì
-def get_courses_by_current_reg_semester():
-    semester = get_registration_semester()
-    if not semester:
-        return []
+def get_courses_by_current_reg_semester(semester_id=None):
+
     courses = (db.session.query(Course).join(CourseClass)
-               .filter(CourseClass.semester_id == semester.id)
+               .filter(CourseClass.semester_id == semester_id)
                .distinct().all())
     return courses
 
@@ -358,3 +354,23 @@ def register_course(semester_id, student_id, course_class_id):
     except Exception:
         db.session.rollback()
         raise
+
+def get_next_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.start_registration_date > now
+    ).order_by(
+        Semester.start_registration_date.asc()
+    ).first()
+
+
+def get_review_registration_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.start_registration_date <= now + timedelta(days=1),
+        Semester.end_registration_date >= now
+    ).order_by(
+        Semester.start_registration_date.asc()
+    ).first()

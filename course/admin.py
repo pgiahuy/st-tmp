@@ -143,7 +143,6 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
                 DataRequired(message="Vui lòng nhập sĩ số tối đa"),
                 NumberRange(min=1, message="Sĩ số không được bé hơn 1"),
                 NumberRange(max=50, message="Sĩ số không được lớn hơn 50")
-
             ]
         },
         'room': {

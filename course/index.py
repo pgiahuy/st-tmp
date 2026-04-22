@@ -156,18 +156,34 @@ def register_routes(app):
     @app.route('/register-course')
     @login_required
     def register_course_page():
+        error_msg = None
+        reg_semester_tmp = dao.get_registration_semester()
+        reg_semester = reg_semester_tmp
+        is_preview = False
 
-        reg_semester = dao.get_registration_semester()
-        if not reg_semester:
-            return render_template('register_course.html', error="Hiện không trong thời gian đăng ký học phần.")
+        if not reg_semester_tmp:
+            preview_sem = dao.get_review_registration_semester()
+            next_semester = dao.get_next_semester()
+
+            if next_semester:
+                error_msg = f"Ngoài thời gian đăng ký! Quay lại vào {next_semester.start_registration_date}"
+            else:
+                error_msg = "Hiện chưa có kỳ đăng ký nào!"
+
+            if preview_sem:
+                reg_semester = preview_sem
+                is_preview = True
+            else:
+                return render_template('register_course.html', error=error_msg)
+
 
         kw = request.args.get('kw')
         course_id = request.args.get('course_id')
 
         student = dao.get_student_by_mssv(current_user.username)
 
-        course_classes = dao.get_course_classes_in_reg_semester(course_id=course_id, kw=kw)
-        courses = dao.get_courses_by_current_reg_semester()
+        course_classes = dao.get_course_classes_in_reg_semester(semester_id= reg_semester.id, course_id=course_id, kw=kw)
+        courses = dao.get_courses_by_current_reg_semester(semester_id=reg_semester.id)
 
         registered_ids = dao.get_course_class_ids_student_registered(semester_id=reg_semester.id, student_id=student.id)
 
@@ -179,6 +195,11 @@ def register_routes(app):
         print(dao.get_course_classes_student_registered(student_id=student.id, semester_id=reg_semester.id))
 
         sum_credits = sum(c.course.credits for c in registered_course_class)
+        print("&&&&&&&&&&&")
+        print("====reg_semester= =", reg_semester)
+
+        valid_regis = (not is_preview) and (reg_semester_tmp is not None)
+
         return render_template(
             'register_course.html',
             courses_in_reg_semester=courses,
@@ -187,8 +208,10 @@ def register_routes(app):
             sum_credits=sum_credits,
             registered_ids=registered_ids,
             registered_course_class=registered_course_class,
-
-            registration_semester=reg_semester
+            registration_semester=reg_semester,
+            valid_regis=valid_regis,
+            is_preview=is_preview,
+            error=error_msg
         )
 
     @app.route('/timetable')
