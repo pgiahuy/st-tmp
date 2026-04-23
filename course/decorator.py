@@ -1,8 +1,8 @@
-from functools import wraps
-from flask import abort
-from flask_login import current_user
-
-from course.models import UserRole
+# from functools import wraps
+# from flask import abort
+# from flask_login import current_user
+#
+# from course.models import UserRole
 
 #
 # def student_required(f):

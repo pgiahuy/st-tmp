@@ -105,30 +105,30 @@ def register_api(app):
             }), 200
         except BusinessException as e:
             return jsonify({"success": False, "message": str(e)}), 400
-
-@app.route('/api/admin/auto-cancel', methods=['POST'])
-def api_auto_cancel():
-    print("===================")
-    print("ADMIN ROLEE==============", current_user.role)
-    if not current_user.is_authenticated:
-        return jsonify({
-            "success": False,
-            "message": "Unauthorized"
-        }), 401
-
-    if current_user.role != UserRole.ADMIN:
-        return jsonify({
-            "success": False,
-            "message": "Permission Denied"
-        }), 403
-
-    try:
-        auto_cancel_job()
-        return jsonify({
-            "message": "Đã tự động huỷ đăng ký các sinh viên không đăng ký đủ tín chỉ"
-        }), 200
-
-    except Exception as e:
-        return jsonify({
-            "message": str(e),
-        }), 500
+#
+# @app.route('/api/admin/auto-cancel', methods=['POST'])
+# def api_auto_cancel():
+#     print("===================")
+#     print("ADMIN ROLEE==============", current_user.role)
+#     if not current_user.is_authenticated:
+#         return jsonify({
+#             "success": False,
+#             "message": "Unauthorized"
+#         }), 401
+#
+#     if current_user.role != UserRole.ADMIN:
+#         return jsonify({
+#             "success": False,
+#             "message": "Permission Denied"
+#         }), 403
+#
+#     try:
+#         auto_cancel_job()
+#         return jsonify({
+#             "message": "Đã tự động huỷ đăng ký các sinh viên không đăng ký đủ tín chỉ"
+#         }), 200
+#
+#     except Exception as e:
+#         return jsonify({
+#             "message": str(e),
+#         }), 500

@@ -43,8 +43,6 @@ def get_course_class_ids_student_registered(semester_id, student_id):
 
 def get_course_classes_in_reg_semester(semester_id= None, course_id=None, kw=None):
 
-
-
     query = CourseClass.query.filter(
         CourseClass.semester_id == semester_id,
         CourseClass.active == True
@@ -87,7 +85,7 @@ def get_all_course_classes():
     return CourseClass.query.filter(CourseClass.active == True).all()
 
 
-def get_conflicting_class(student_id, course_class_id, reg_semester_id):
+def get_conflicting_class(student_id, course_class_id, reg_semester_id =  None):
 
     new_class = db.session.get(CourseClass, course_class_id)
     if not new_class or not reg_semester_id:
@@ -136,7 +134,7 @@ def course_class_is_full(course_class_id):
     count = db.session.query(Registration).filter_by(course_class_id=course_class_id, status = RegistrationStatus.REGISTERED).count()
     return count >= course_class.max_students
 
-# all lớp trong kì
+# all môn trong kì
 def get_courses_by_current_reg_semester(semester_id=None):
 
     courses = (db.session.query(Course).join(CourseClass)
@@ -283,7 +281,7 @@ def change_password(user_id, new_password):
 # def get_courses_by_id(course_id):
 #     return Course.query.get(course_id)
 
-def get_room__by_id(room_id):
+def get_room_by_id(room_id):
     return db.session.get(Room,room_id)
 
 def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=None):
@@ -300,7 +298,7 @@ def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=N
         CourseClass.active == True
     )
 
-    if current_class_id:
+    if current_class_id: # by_pass khi update
         query = query.filter(CourseClass.id != current_class_id)
 
     new_slots = db.session.query(ScheduleSlot).filter(ScheduleSlot.id.in_(slot_ids)).all()

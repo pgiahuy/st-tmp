@@ -203,7 +203,8 @@ def test_register_fail_missing_prerequisite(test_session,monkeypatch,sample_seme
 
     with pytest.raises(BusinessException) as e:
         register_course(sample_semester[0].id, sample_student.id, sample_course_class_need_prerequisite.id)
-    assert "Chưa hoàn thành môn tiên quyết!" in str(e.value)
+    assert "Chưa hoàn thành môn tiên quyết" in str(e.value)
+    assert "KTLT" in str(e.value)
 
 def test_register_fail_registered(test_session,monkeypatch,sample_semester, sample_student, sample_course_class):
 
