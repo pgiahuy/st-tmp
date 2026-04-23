@@ -1,8 +1,9 @@
 import markupsafe
+from click import Choice
 from flask import url_for, request, abort
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.contrib.sqla.fields import InlineModelFormList, QuerySelectMultipleField
+from flask_admin.contrib.sqla.fields import InlineModelFormList, QuerySelectMultipleField, QuerySelectField
 from flask_admin.form import DatePickerWidget
 from flask_login import current_user
 from werkzeug.utils import redirect
@@ -13,7 +14,7 @@ import course.utils
 from course import app, db, dao, utils, services
 from course.exceptions import BusinessException
 from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig, Registration, Semester, \
-    ScheduleSlot, CourseClassSchedule
+    ScheduleSlot, CourseClassSchedule, CoursePrerequisite
 from course.services import course_management_service
 
 
@@ -46,8 +47,22 @@ class MyAdminModelView(AdminAccessMixin, ModelView):
 
 class UserAdmin(AdminAccessMixin, ModelView):
     column_list = ('username', 'active', 'role', 'created_date')
-    form_excluded_columns = ('student', 'created_date', 'role')
+    form_excluded_columns = ( 'created_date', 'role','password', 'student')
     column_labels = {'role': 'Vai trò'}
+    can_create = False
+    can_delete = False
+
+    form_extra_fields = {
+        'student': QuerySelectField(
+            'Sinh viên',
+            query_factory=lambda: Student.query.all(),
+            get_label=lambda s: s.full_name,
+            allow_blank=True,
+            blank_text="----"
+        )
+    }
+
+
 
     def on_model_change(self, form, model, is_created):
         if is_created:
@@ -80,7 +95,27 @@ class CourseAdmin(AdminAccessMixin, ModelView):
         'course_code': 'Mã MH',
         'course_name': 'Tên MH',
         'credits': 'Số tín chỉ ',
+        'prerequisites': "Tiên quyết"
     }
+    column_list = ('course_code', 'course_name', 'credits', 'prerequisites')
+
+    form_extra_fields = {
+        'prerequisites': QuerySelectMultipleField(
+            'Chọn môn tiên quyết',
+            query_factory=lambda: Course.query.all(),
+            get_label=lambda c: f"{c.course_code} - {c.course_name}"
+        )
+    }
+
+    column_formatters = {
+        'prerequisites': lambda v, c, m, p: markupsafe.Markup("<br>".join(
+            f"{x.course_code} - {x.course_name}"
+            for x in m.prerequisites
+        )) if m.prerequisites else "Không có"
+    }
+
+
+    form_excluded_columns = ['classes', 'created_date','required_for']
 
 
 class CourseClassAdmin(AdminAccessMixin, ModelView):
@@ -162,6 +197,14 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
     ]
 
     form_excluded_columns = ('schedule_associations', 'registrations', 'created_date', 'active')
+
+    def on_form_prefill(self, form, id):
+        model = self.get_one(id)
+
+        if model and model.schedule_associations:
+            form.slots_picker.data = [
+                sa.slot for sa in model.schedule_associations
+            ]
 
     form_extra_fields = {
         'slots_picker': QuerySelectMultipleField(
@@ -256,13 +299,26 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
 
 
 class ScheduleSlotAdmin(AdminAccessMixin, ModelView):
-    pass
+    form_excluded_columns = ('created_date', 'active','class_associations')
 
 
 class RegistrationAdmin(AdminAccessMixin, ModelView):
     can_create = False
     can_edit = True
     can_delete = False
+    column_labels = {
+        "updated_at": 'Cập nhật lần cuối',
+        'registered_at': 'Đăng ký lần cuối',
+        'status': 'Trạng thái',
+        'student':'Sinh viên',
+        'course_class':'Lớp',
+        'semester':'Học kỳ',
+    }
+    column_formatters = {
+        'student': lambda v, c, m, p: f"{m.student.mssv}",
+        'course_class': lambda v, c, m, p: f"{m.course_class.class_code}",
+    }
+    column_list = ['pre_status', 'status', 'updated_at', 'registered_at', 'student', 'course_class', 'semester']
 
 
 class SemesterAdmin(AdminAccessMixin, ModelView):
@@ -297,7 +353,7 @@ class SemesterAdmin(AdminAccessMixin, ModelView):
         'end_date': {'widget': DatePickerWidget()}
     }
 
-    form_excluded_columns = ('created_date', 'registrations')
+    form_excluded_columns = ('created_date', 'registrations','course_classes')
 
 
 class RoomAdmin(AdminAccessMixin, ModelView):
@@ -306,6 +362,7 @@ class RoomAdmin(AdminAccessMixin, ModelView):
         'name': 'Tên phòng',
         'capacity': 'Chỗ ngồi sinh viên'
     }
+    form_excluded_columns = ('created_date', 'classes')
 
 
 class RuleAdmin(AdminAccessMixin, ModelView):

@@ -239,7 +239,7 @@ def get_all_student_studied(semester_id , student_id):
         if semester and reg.semester_id == semester_id:
             continue
 
-        if reg.course_class and reg.course_class.course:
+        if reg.course_class and reg.course_class.course and reg.status == RegistrationStatus.REGISTERED:
             student_studied.append(reg.course_class.course.id)
 
     return set(student_studied)
@@ -258,20 +258,18 @@ def check_duplicate_in_semester(semester_id ,student_id, course_class_id):
     return False
 
 
-def check_studied_prerequisites(semester_id, student_id, course_class_id):
+def get_prerequisites_not_yet_study(semester_id, student_id, course_class_id):
     course_class = get_course_class_by_id(course_class_id)
     course = course_class.course
 
+    #list(id)
     student_studied = get_all_student_studied(semester_id ,student_id)
 
     prerequisite_list = CoursePrerequisite.query.filter_by(course_id=course.id).all()
     prerequisite_ids = [pr.prerequisite_id for pr in prerequisite_list]
 
-    if not prerequisite_ids:
-        return True
-
-    return all(pr in student_studied for pr in prerequisite_ids)
-
+    missing = [pr for pr in prerequisite_ids if pr not in student_studied]
+    return missing
 
 
 def change_password(user_id, new_password):
@@ -382,3 +380,8 @@ def get_recent_past_semester():
         Semester.end_date < now
     ).order_by(Semester.end_date.desc()).first()
 
+
+def get_courses_by_ids(ids):
+    if not ids:
+        return []
+    return db.session.query(Course).filter(Course.id.in_(ids)).all()
