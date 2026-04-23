@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
 from flask import render_template, request, session, abort, jsonify
 from werkzeug.utils import redirect
@@ -6,7 +6,7 @@ from werkzeug.utils import redirect
 from course import app, dao, login, db, api
 
 from flask_login import logout_user, login_user, current_user, login_required, login_required
-from course.models import UserRole, Day, Session
+from course.models import UserRole, Day, Session, ConfigEnum
 from course.services import auth_service
 
 
@@ -107,7 +107,16 @@ def register_routes(app):
         semester_for_view = current_semester or reg_semester
         if not semester_for_view:
             semester_for_view = dao.get_recent_past_semester()
+
+
         student = dao.get_student_by_mssv(current_user.username)
+
+        if not semester_for_view:
+            error_msg = "Danh sách môn trống!"
+            return render_template('profile.html',
+                                   student=student,
+                                   error_msg = error_msg)
+
         student_classes = dao.get_course_classes_student_registered(semester_for_view.id, student.id)
 
         sum_credits = sum(c.course.credits for c in student_classes)
@@ -169,9 +178,19 @@ def register_routes(app):
         if not reg_semester_tmp:
             preview_sem = dao.get_review_registration_semester()
             next_semester = dao.get_next_semester()
+            current_semester = dao.get_current_semester()
+            dl = dao.get_config_value(ConfigEnum.CANCEL_DEADLINE_DAYS, 14)
 
-            if next_semester:
-                error_msg = f"Ngoài thời gian đăng ký! {next_semester.name} - {next_semester.year} mở vào {next_semester.start_registration_date}"
+            if current_semester:
+                if date.today() < current_semester.start_date + timedelta(days=dl):
+                    error_msg = f"Ngoài thời gian đăng ký! {current_semester.name} - {current_semester.year} đã đóng vào {current_semester.end_registration_date}"
+                elif next_semester:
+                    error_msg = f"Ngoài thời gian đăng ký! {next_semester.name} - {next_semester.year}  mở vào {next_semester.start_registration_date}"
+
+                else:
+                    error_msg = "Ngoài thời gian đăng ký!"
+            elif preview_sem:
+                error_msg = f"Ngoài thời gian đăng ký! {preview_sem.name} - {preview_sem.year}  mở vào {preview_sem.start_registration_date}"
             else:
                 error_msg = "Ngoài thời gian đăng ký!"
 
@@ -231,16 +250,6 @@ def register_routes(app):
     def timetable_page():
         reg_semester = dao.get_registration_semester()
         current_semester = dao.get_current_semester()
-
-        semester_for_view = current_semester or reg_semester
-        if not semester_for_view:
-            semester_for_view = dao.get_recent_past_semester()
-
-        student = dao.get_student_by_mssv(current_user.username)
-        student_classes = dao.get_course_classes_student_registered(semester_for_view.id, student.id)
-
-        semester_name = f"{semester_for_view.name} - {semester_for_view.year}"
-
         days = [
             {"name": d.label, "value": d}
             for d in Day
@@ -250,6 +259,24 @@ def register_routes(app):
             {"name": s.display, "value": s}
             for s in Session
         ]
+
+        semester_for_view = current_semester or reg_semester
+        if not semester_for_view:
+            semester_for_view = dao.get_recent_past_semester()
+
+        if not semester_for_view:
+            error_msg = "Thời khoá biểu trống!"
+            return render_template('timetable.html',
+                                   error_msg = error_msg,
+                                   days=days,
+                                   sessions=sessions
+                                   )
+
+        student = dao.get_student_by_mssv(current_user.username)
+        student_classes = dao.get_course_classes_student_registered(semester_for_view.id, student.id)
+
+        semester_name = f"{semester_for_view.name} - {semester_for_view.year}"
+
 
         sum_credits = sum(c.course.credits for c in student_classes)
 

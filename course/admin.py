@@ -260,15 +260,28 @@ class ScheduleSlotAdmin(AdminAccessMixin, ModelView):
 
 
 class RegistrationAdmin(AdminAccessMixin, ModelView):
-    pass
+    can_create = False
+    can_edit = True
+    can_delete = False
 
 
 class SemesterAdmin(AdminAccessMixin, ModelView):
-    column_list = ('id', 'name', 'year', 'start_date', 'start_registration_date', 'end_registration_date', 'end_date')
+    column_list = ( 'name', 'year', 'start_date','end_date', 'start_registration_date', 'end_registration_date')
 
     column_searchable_list = ('name', 'year')
 
-    column_sortable_list = ('id', 'name', 'year')
+    column_sortable_list = ( 'name', 'year')
+
+    column_labels = {
+        'name':'Học kỳ',
+        'year':'Năm',
+        'start_date': 'Bắt đầu',
+        'end_date':'Kết thúc',
+        'start_registration_date':'Mở đăng ký',
+        'end_registration_date':'Đóng đăng ký'
+    }
+
+
 
     form_overrides = {
         'start_date': DateField,

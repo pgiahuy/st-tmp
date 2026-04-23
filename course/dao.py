@@ -381,3 +381,4 @@ def get_recent_past_semester():
     return Semester.query.filter(
         Semester.end_date < now
     ).order_by(Semester.end_date.desc()).first()
+
