@@ -188,9 +188,9 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         },
         'semester': {
             'validators': [DataRequired(message="Vui lòng chọn học kỳ")],
-            'query_factory': lambda: Semester.query.filter(
-                Semester.end_date >= date.today()
-            ).all()
+            # 'query_factory': lambda: Semester.query.filter(
+            #     Semester.end_date >= date.today()
+            # ).all()
         },
         'class_code': {
             'validators': [DataRequired(message="Vui lòng nhập mã lớp")]
@@ -226,6 +226,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
     column_filters = ['room.name', 'course.course_name', 'semester']
 
     def on_model_change(self, form, model, is_created):
+
         room = form.room.data
         selected_slots = form.slots_picker.data
 
@@ -237,6 +238,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         print("ADMIN TYPE MAXSTUYDENR++++++")
         print(type(form.max_students.data))
         try:
+
             if is_created:
                 with db.session.no_autoflush:
                     name, index = dao.get_next_course_class_name(
@@ -247,17 +249,23 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
                 model.class_code = name
                 model.class_index = index
 
+            print(form._fields.keys())
 
-            model.schedule_associations = course_management_service.handle_course_class_change_service(
-                user_role=current_user.role,
-                semester_id=form.semester.data.id,
-                room_id=room.id,
-                slot_ids=slot_ids,
-                max_students=form.max_students.data,
-                selected_slots_objects=selected_slots,
-                model=model,
-                class_id=class_id
-            )
+            with db.session.no_autoflush:
+                result = course_management_service.handle_course_class_change_service(
+                    user_role=current_user.role,
+                    semester_id=form.semester.data.id,
+                    room_id=room.id,
+                    slot_ids=slot_ids,
+                    max_students=form.max_students.data,
+                    selected_slots_objects=selected_slots,
+                    model=model,
+                    course_id=form.course.data.id,
+                    class_id=class_id
+                )
+
+            model.schedule_associations = result
+
 
         except (BusinessException, ValueError) as e:
             raise ValidationError(str(e))

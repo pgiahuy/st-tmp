@@ -1,12 +1,12 @@
 from datetime import date
 
-from course import dao
+from course import dao, db
 from course.exceptions import BusinessException, PermissionDeniedException
 from course.models import CourseClassSchedule, ConfigEnum, UserRole
 
 
 def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids, max_students,
-                                       selected_slots_objects, model, class_id=None):
+                                       selected_slots_objects, model, course_id, class_id=None):
     print("TYPEEEEE maxs_students=======")
     print(type(max_students), max_students)
 
@@ -22,14 +22,33 @@ def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids,
         raise BusinessException(
             f"Sĩ số không thể nhỏ hơn số sinh viên đã đăng ký ({current_count})"
         )
+    print(f"course_id = {course_id}===")
+    print(type(course_id), course_id)
+    print("////////////////")
+    print(model.semester_id)
+    print("course_id=", course_id)
+    print("semester_id=", semester_id)
+    print("class_index", model.class_index)
+
+
+    existing = dao.find_course_class_by_unique_keys(
+            course_id=course_id,
+            semester_id=semester_id,
+            class_index=model.class_index,
+            exclude_id=class_id
+    )
+
+    if existing:
+        raise BusinessException("Trùng lớp học phần")
 
 
     result = validate_course_class(
         semester_id,
+        model.semester_id,
         room_id,
         slot_ids,
         max_students,
-        class_id
+        class_id,
     )
 
     if result:
@@ -69,15 +88,19 @@ def delete_course_class_service(user_role,course_class_id):
 
 
 # main check
-def validate_course_class(semester_id, room_id , slot_ids, max_students, course_class_id=None):
+def validate_course_class(semester_id,model_semester_id, room_id , slot_ids, max_students, course_class_id=None):
     print("TYPEEEEE maxs_students=======")
     print(type(max_students), max_students)
 
-    semester = dao.get_semester_by_id(semester_id)
+    model_semester = dao.get_semester_by_id(model_semester_id)
+    new_semester = dao.get_semester_by_id(semester_id)
     today = date.today()
 
-    if semester.end_date and today > semester.end_date:
-        raise BusinessException("Không thể tạo lớp cho học kỳ đã kết thúc")
+    if model_semester.end_date and today > model_semester.end_date:
+        raise BusinessException(f"Không thể thao tác vì lớp thuộc học kỳ {model_semester.name} - {model_semester.year}, đã kết thúc !")
+
+    if new_semester.end_date and today > new_semester.end_date:
+        raise BusinessException(f"Học kỳ {new_semester.name} - {new_semester.year} đã kết thúc !")
 
 
     room = dao.get_room_by_id(room_id)

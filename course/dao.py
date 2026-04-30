@@ -397,8 +397,9 @@ def get_next_course_class_name(course_id, semester_id):
                  .scalar())
 
     next_index = (max_index or 0) + 1
-
+    print(f"codeeê{course}")
     name = f"{course.course_code}-{semester.name}-L{next_index:02d}"
+
 
     return name, next_index
 
@@ -406,3 +407,15 @@ def count_registered_students(course_class_id):
     return db.session.query(Registration).filter(
         Registration.course_class_id == course_class_id
     ).count()
+
+def find_course_class_by_unique_keys(course_id, semester_id, class_index, exclude_id=None):
+    query = db.session.query(CourseClass).filter(
+        CourseClass.course_id == course_id,
+        CourseClass.semester_id == semester_id,
+        CourseClass.class_index == class_index
+    )
+
+    if exclude_id:
+        query = query.filter(CourseClass.id != exclude_id)
+
+    return query.first()
