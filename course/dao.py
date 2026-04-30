@@ -401,3 +401,8 @@ def get_next_course_class_name(course_id, semester_id):
     name = f"{course.course_code}-{semester.name}-L{next_index:02d}"
 
     return name, next_index
+
+def count_registered_students(course_class_id):
+    return db.session.query(Registration).filter(
+        Registration.course_class_id == course_class_id
+    ).count()

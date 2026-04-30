@@ -10,9 +10,18 @@ def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids,
     print("TYPEEEEE maxs_students=======")
     print(type(max_students), max_students)
 
-
     if user_role != UserRole.ADMIN:
         raise PermissionDeniedException()
+
+    current_count = (
+        dao.count_registered_students(class_id)
+        if class_id else 0
+    )
+
+    if max_students < current_count:
+        raise BusinessException(
+            f"Sĩ số không thể nhỏ hơn số sinh viên đã đăng ký ({current_count})"
+        )
 
 
     result = validate_course_class(
@@ -88,6 +97,8 @@ def validate_course_class(semester_id, room_id , slot_ids, max_students, course_
 # như tên:)
 def validate_max_students(room, max_students, max_limit):
     limit = min(max_limit, room.capacity)
+
+
 
     if max_students > limit:
         raise BusinessException(
