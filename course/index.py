@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import render_template, request, session, abort
+from flask import render_template, request, session, abort, jsonify
 from werkzeug.utils import redirect
 
 from course import app, dao, login, db, api
@@ -11,7 +11,6 @@ from course.services import auth_service
 
 
 def register_routes(app):
-
     @app.before_request
     def restrict_admin_access():
         if not current_user.is_authenticated:
@@ -20,12 +19,11 @@ def register_routes(app):
         if current_user.role == UserRole.ADMIN:
             if request.path == '/':
                 return
-            allowed_paths = ['/admin', '/logout', '/login', '/static']
+            allowed_paths = ['/admin', '/logout', '/login', '/static', "/api/admin"]
 
             if any(request.path.startswith(p) for p in allowed_paths):
                 return
             abort(403)
-
 
 
     @app.errorhandler(401)
@@ -34,7 +32,7 @@ def register_routes(app):
 
     @app.errorhandler(403)
     def forbidden(error):
-        return render_template('error/403.html'), 403
+        return render_template("error/403.html"), 403
 
     @app.after_request
     def add_header(response):
@@ -105,8 +103,7 @@ def register_routes(app):
     def my_profile():
         reg_semester = dao.get_registration_semester()
         student = dao.get_student_by_mssv(current_user.username)
-        student_classes = [reg.course_class for reg in student.registrations
-                           if reg.semester_id == reg_semester.id]
+        student_classes = dao.get_course_classes_student_registered(reg_semester.id, student.id)
 
         sum_credits = sum(c.course.credits for c in student_classes)
 
@@ -199,8 +196,7 @@ def register_routes(app):
     def timetable_page():
         reg_semester = dao.get_registration_semester()
         student = dao.get_student_by_mssv(current_user.username)
-        student_classes = [reg.course_class for reg in student.registrations
-                           if reg.semester_id == reg_semester.id]
+        student_classes = dao.get_course_classes_student_registered(reg_semester.id, student.id)
 
         semester_name = f"{reg_semester.name} - {reg_semester.year}"
 

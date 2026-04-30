@@ -18,14 +18,6 @@ def sample_student(test_session):
     return student
 
 
-@pytest.fixture
-def sample_user(test_session,sample_student):
-    user = User(username="2351050061",password=hash_password("Abc1234@"))
-    user.student = sample_student
-    test_session.add(user)
-    test_session.commit()
-    return user
-
 
 @pytest.fixture
 def sample_semester(test_session):
@@ -94,20 +86,7 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
     test_session.commit()
     return course_class_1
 
-@pytest.fixture
-def sample_course_class_hk2(test_session, sample_course, sample_room, sample_semester):
-    course_class_1 = CourseClass(
-        class_code="KTLT",
-        course_id=sample_course[0].id,
-        room_id=sample_room[0].id,
-        semester_id=sample_semester[1].id,
-        max_students=40,
-        active=True
-    )
 
-    test_session.add(course_class_1)
-    test_session.commit()
-    return course_class_1
 
 # hk1 - room[1]
 @pytest.fixture
@@ -203,6 +182,22 @@ def test_register_success(test_session, monkeypatch, sample_semester, sample_stu
     res = register_course(sample_semester[0].id ,sample_student.id, sample_course_class.id)
     assert res is True
 
+def test_register_confirm_success(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
+    monkeypatch.setattr(
+        "course.dao.get_config_value",
+        lambda key, default=None: 3 if key == ConfigEnum.MIN_CREDITS else default
+    )
+    register_course(sample_semester[0].id,sample_student.id,sample_course_class.id)
+    res = confirm_registration(sample_semester[0].id ,sample_student.id)
+    assert res is True
+
+
+
+def test_register_fail_not_semester(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
+    with pytest.raises(BusinessException) as e:
+        res = register_course(11 ,sample_student.id, sample_course_class.id)
+    assert "học kỳ" in str(e.value)
+
 def test_register_fail_missing_prerequisite(test_session,monkeypatch,sample_semester,sample_student,
                                             sample_course_class_need_prerequisite,sample_course_prerequisite):
 
@@ -254,11 +249,14 @@ def test_register_fail_min_credit(test_session, monkeypatch, sample_semester, sa
         lambda key, default=None: 12 if key == ConfigEnum.MIN_CREDITS else default
     )
 
-
     register_course(sample_semester[0].id,sample_student.id,sample_course_class.id)
     with pytest.raises(BusinessException) as e:
         confirm_registration(sample_semester[0].id ,sample_student.id)
     assert "tối thiểu" in str(e.value)
+
+
+
+
 
 def test_register_fail_full_slot(test_session, monkeypatch, sample_semester, sample_student, sample_course_class_full_slot):
 

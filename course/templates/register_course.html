@@ -68,16 +68,20 @@
                     {% endfor %}
                 </td>
                 <td>{{ c.room.name }}</td>
-                <td>
-                    <span style="color: blue;">{{ c.registrations|length }}</span> / {{ c.max_students }}
+                <td style="color: {% if c.max_students == c.current_size %}red{% endif %}">
+                    <span style="color: {% if c.max_students == c.current_size %}red {%else%} blue{% endif %}">{{ c.current_size }}</span> / {{ c.max_students }}
                 </td>
                 <td>
+                    {% if c.max_students <= c.current_size %}
+                    <span class="text text-danger"><i>Hết sĩ số</i></span>
+                    {% else %}
                     <input type="checkbox"
                            class="register-checkbox"
                            style="transform: scale(1.3);"
                            data-class-id="{{ c.id }}"
                            data-registered="{{ '1' if c.id in registered_ids else '0' }}"
                            {% if c.id in registered_ids %}checked disabled{% endif %}>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

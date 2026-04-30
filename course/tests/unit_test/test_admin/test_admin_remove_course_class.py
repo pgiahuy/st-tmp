@@ -1,8 +1,10 @@
+from unittest.mock import patch
+
 import pytest
 
 from course import dao
 from course.admin import CourseClassAdmin
-from course.exceptions import BusinessException
+from course.exceptions import BusinessException, PermissionDeniedException
 
 from course.models import CourseClass, Registration, Semester, Room, Course, UserRole
 from course.services import course_management_service
@@ -110,15 +112,15 @@ def sample_registration(test_session, sample_course_class):
 class TestCountCourseRegistrations:
 
     def test_count_course_registrations_not_exist(self,test_session, sample_course_class):
-        count = dao.count_course_registrations(test_session, 999)
+        count = dao.count_course_registrations( 999)
         assert count == 0
 
     def test_count_course_registrations_true(self,test_session, sample_registration, sample_course_class):
-        count = dao.count_course_registrations(test_session, sample_course_class.id)
+        count = dao.count_course_registrations( sample_course_class.id)
         assert count == 2
 
     def test_count_course_registrations_true_zero(self,test_session, sample_registration, sample_course_class_none):
-        count = dao.count_course_registrations(test_session, sample_course_class_none.id)
+        count = dao.count_course_registrations( sample_course_class_none.id)
         assert count == 0
 
 
@@ -126,18 +128,24 @@ class TestCountCourseRegistrations:
 class TestRemoveCourseClassService:
 
     def test_delete_course_class_success(self, test_session, sample_course_class_none):
-        result = course_management_service.delete_course_class_service(test_session, sample_course_class_none.id)
+        result = course_management_service.delete_course_class_service(UserRole.ADMIN , sample_course_class_none.id)
         assert result is True
         deleted = dao.get_course_class_by_id(sample_course_class_none.id)
         assert deleted is None
 
     def test_delete_course_class_has_registration(self, test_session, sample_course_class, sample_registration):
         with pytest.raises(BusinessException):
-            course_management_service.delete_course_class_service(test_session, sample_course_class.id)
+            course_management_service.delete_course_class_service(UserRole.ADMIN    , sample_course_class.id)
 
     def test_delete_course_class_not_found(self,test_session):
-        with pytest.raises(ValueError):
-            course_management_service.delete_course_class_service(test_session, 9999)
+        with pytest.raises(ValueError) as e:
+            course_management_service.delete_course_class_service(UserRole.ADMIN, 9999)
+        assert "not found" in str(e)
+
+    def test_delete_course_class_not_permission(self,test_session,sample_course_class):
+        with pytest.raises(PermissionDeniedException) as e:
+            course_management_service.delete_course_class_service(UserRole.USER, sample_course_class.id)
+        assert "quyền" in str(e)
 
 
 
@@ -168,10 +176,44 @@ class TestRemoveCourseClassAuth:
         view = CourseClassAdmin(CourseClass, None)
         assert view.is_accessible() is False
 
-def test_delete_class_forbidden(test_client, monkeypatch):
+
+def test_create_class_forbidden_v2(monkeypatch,test_client):
+
+    with test_client.session_transaction() as sess:
+        sess["_user_id"] = "1"
+        sess["_fresh"] = True
+
+    monkeypatch.setattr(
+        "course.index.render_template",
+        lambda *args, **kwargs: ""
+    )
+
     monkeypatch.setattr(
         "flask_login.utils._get_user",
-        lambda: FakeUser()
+        lambda: type("User", (), {
+            "is_authenticated": True,
+            "role": UserRole.USER
+        })()
     )
     res = test_client.post("/admin/courseclass/delete/")
+
     assert res.status_code == 403
+
+
+def test_delete_class_success(test_client, monkeypatch):
+    with test_client.session_transaction() as sess:
+        sess["_user_id"] = "1"
+        sess["_fresh"] = True
+
+    monkeypatch.setattr(
+        "flask_login.utils._get_user",
+        lambda: type("User", (), {
+            "is_authenticated": True,
+            "role": UserRole.ADMIN
+        })()
+    )
+
+    res = test_client.post("/admin/courseclass/delete/")
+
+    assert res.status_code == 302
+    assert "/admin/courseclass/" in res.location

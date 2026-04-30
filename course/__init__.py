@@ -1,3 +1,5 @@
+from apscheduler.schedulers.background import BackgroundScheduler
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 import cloudinary
@@ -26,3 +28,13 @@ cloudinary.config(
     api_key='378681865892523',
     api_secret='JoV-kP2mQAXaW3dfDlQAuuqP7pA'
 )
+
+
+scheduler = BackgroundScheduler()
+from course.services.system_cancel_service import auto_cancel_job
+
+scheduler.add_job(auto_cancel_job, 'interval', hours=24)
+
+
+if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    scheduler.start()

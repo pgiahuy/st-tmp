@@ -1,0 +1,1 @@
+pytest --cov=course --cov-report=term-missing

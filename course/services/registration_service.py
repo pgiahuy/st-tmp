@@ -58,10 +58,9 @@ def register_course(semester_id , student_id, course_class_id):
 
 def confirm_registration(semester_id, student_id):
     min_credits_limit = dao.get_config_value(ConfigEnum.MIN_CREDITS, 12)
-
     total = dao.get_total_credits(student_id,semester_id)
 
-    if total < min_credits_limit:
+    if not dao.check_student_enough_credits_in_semester(semester_id,student_id):
         raise BusinessException(f"Bạn cần đăng ký tối thiểu {min_credits_limit} tín chỉ để xuất phiếu. (Hiện có: {total})")
 
     return True
@@ -78,11 +77,11 @@ def cancel_registration(semester_id, student_id, course_class_id):
     now = datetime.now().date()
 
 
-    if reg.semester.start_date and now > reg.semester.start_date + timedelta(days=14):
+    if reg.semester.start_date and now >= reg.semester.start_date + timedelta(days=14):
         raise BusinessException("Không được huỷ môn sau 2 tuần bắt đầu học kỳ!")
 
-    if reg.midterm_score is not None:
+    if reg.is_midterm_tested is True:
         raise BusinessException("Không được huỷ sau khi đã thi giữa kỳ")
 
-    dao.delete_registration(reg)
+    dao.student_cancel_registration(reg)
     return True
