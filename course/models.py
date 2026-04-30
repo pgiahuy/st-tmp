@@ -1,10 +1,15 @@
 from flask_login import UserMixin
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum as SQLEnum, DateTime, func
-from sqlalchemy.orm import relationship
-from datetime import datetime
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum as SQLEnum, DateTime, func, Double
+from sqlalchemy.orm import relationship, validates
 from enum import Enum
 from course import db, app
 
+
+class ConfigEnum(Enum):
+    MAX_CREDITS = "MAX_CREDITS"
+    MIN_CREDITS = "MIN_CREDITS"
+    MAX_STUDENTS_PER_CLASS = "MAX_STUDENTS_PER_CLASS"
+    CANCEL_DEADLINE_DAYS = "CANCEL_DEADLINE_DAYS"
 
 class UserRole(Enum):
     USER = (1, "Sinh viên")
@@ -15,13 +20,23 @@ class UserRole(Enum):
         self.label = label
 
 class Day(Enum):
-    MONDAY = "Mon"
-    TUESDAY = "Tue"
-    WEDNESDAY = "Wed"
-    THURSDAY = "Thu"
-    FRIDAY = "Fri"
-    SATURDAY = "Sat"
-    SUNDAY = "Sun"
+    MONDAY = ("MON", "Thứ 2")
+    TUESDAY = ("TUE", "Thứ 3")
+    WEDNESDAY = ("WED", "Thứ 4")
+    THURSDAY = ("THU", "Thứ 5")
+    FRIDAY = ("FRI", "Thứ 6")
+    SATURDAY = ("SAT", "Thứ 7")
+    SUNDAY = ("SUN", "Chủ nhật")
+
+    def __init__(self, value, label):
+        self._value_ = value
+        self.label = label
+
+
+class RegistrationStatus(Enum):
+    REGISTERED = "REGISTERED"
+    STUDENT_CANCELLED = "STUDENT_CANCELLED",
+    SYSTEM_CANCELLED = "SYSTEM_CANCELLED"
 
 class Session(Enum):
     MORNING   = ("Sáng",     "07:30", "12:00")
@@ -34,7 +49,7 @@ class Session(Enum):
         self.end_time = end
 
     def __str__(self):
-        return self.label
+        return f"{self.label} ({self.start_time} - {self.end_time})"
 
     @property
     def display(self):
@@ -46,7 +61,7 @@ class Base(db.Model):
     __abstract__ = True
     id = Column(Integer, primary_key=True, autoincrement=True)
     active = Column(Boolean, default=True)
-    created_date = Column(DateTime, default=datetime.utcnow)
+    created_date = Column(DateTime, default=func.now())
     def __str__(self):
         return getattr(self, "name", str(self.id))
 
@@ -111,10 +126,12 @@ class CourseClass(Base):
     __tablename__ = "course_classes"
 
     id = Column(Integer, primary_key=True)
-    class_code = Column(String(20), unique=True)
+    class_code = Column(String(20))
     course_id = Column(Integer, ForeignKey("courses.id"))
     room_id = Column(Integer, ForeignKey("rooms.id"))
     max_students = Column(Integer)
+    is_midterm_tested = Column(Boolean, default=False)
+    class_index = db.Column(db.Integer, nullable=False)
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=False)
 
     schedule_associations = relationship(
@@ -123,13 +140,26 @@ class CourseClass(Base):
         cascade="all, delete-orphan"
     )
 
+    __table_args__ = (
+        db.UniqueConstraint('course_id', 'semester_id', 'class_index'),
+    )
+
     room = db.relationship("Room", backref="classes")
     registrations = db.relationship("Registration", backref="course_class")
     semester = db.relationship("Semester", backref="course_classes")
 
     @property
     def current_size(self):
-        return len(self.registrations)
+        return db.session.query(func.count(Registration.id)).filter(
+            Registration.course_class_id == self.id,
+            Registration.status == RegistrationStatus.REGISTERED
+        ).scalar()
+
+    @validates('max_students')
+    def validate_max_students(self, key, value):
+        if value <= 0:
+            raise ValueError("Sĩ số phải lớn hơn 0")
+        return value
 
 class ScheduleSlot(Base): #ca học
     __tablename__ = "schedule_slots"
@@ -155,7 +185,7 @@ class Semester(Base):
     year = Column(Integer)
     start_date = Column(db.Date)
     end_date = Column(db.Date)
-
+    is_auto_cancelled = Column(db.Boolean, default=False)
     start_registration_date = Column(db.Date)
     end_registration_date = Column(db.Date)
 
@@ -168,6 +198,9 @@ class Registration(Base):
     student_id = Column(Integer, ForeignKey("students.id"))
     course_class_id = Column(Integer, ForeignKey("course_classes.id"))
     semester_id = Column(Integer, ForeignKey("semesters.id"))
+    updated_at = Column(DateTime)
+    pre_status = Column(SQLEnum(RegistrationStatus), default=RegistrationStatus.REGISTERED)
+    status = Column(SQLEnum(RegistrationStatus), default=RegistrationStatus.REGISTERED)
 
     registered_at = Column(DateTime, default=func.now())
 

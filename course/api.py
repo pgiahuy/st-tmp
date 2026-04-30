@@ -1,80 +1,134 @@
 from flask import request, jsonify
 from flask_login import login_required, current_user
 
+import course.services.registration_service
 from course import dao, app
+from course.exceptions import BusinessException
+from course.models import UserRole
+from course.services import registration_service
+
+from course.services.system_cancel_service import auto_cancel_job
+
+def register_api(app):
+    @app.route('/api/course-register', methods=['POST'])
+    def register_course_api():
+        if not current_user.is_authenticated:
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized"
+            }), 401
+        data = request.get_json()
+
+        if not data or "course_class_id" not in data:
+            return jsonify({"success": False, "message": "Thiếu thông tin"}), 400
+
+        mssv = current_user.username
+        student_id = dao.get_student_id_by_mssv(mssv)
+
+        if not student_id:
+            return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
+
+        course_class_id = int(data['course_class_id'])
+        semester_id = dao.get_registration_semester().id
 
 
+        try:
+            registration_service.register_course(semester_id, student_id, course_class_id)
+            return jsonify({
+                "success": True
+            }), 200
 
-@app.route('/api/course-register', methods=['POST'])
-@login_required
-def register_course():
-    data = request.get_json()
-    mssv = current_user.username
-    student = dao.get_student_by_mssv(mssv)
-    if not student:
-        return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
-    student_id = student.id
-    course_class_id = int(data['course_class_id'])
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": str(e)
+            }), 400
 
-    print("student_id:", student_id)
-    print("course_class_id:",course_class_id)
-    action = data.get('action')
-    try:
-        if action == 'register':
-            dao.register_course(student_id, course_class_id)
-        elif action == 'unregister':
-            dao.unregister_course(student_id, course_class_id)
+    @app.route('/api/register-course/confirm', methods=['POST'])
+    def confirm_register():
+        if not current_user.is_authenticated:
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized"
+            }), 401
+        mssv = current_user.username
+        student = dao.get_student_by_mssv(mssv)
+        if not student:
+            return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
+        student_id = student.id
+        semester = dao.get_registration_semester()
 
-        return jsonify({
-            "success": True
-        }), 200
+        if not semester:
+            return jsonify({"success": False, "message": "Không có học kỳ"}), 400
+        semester_id = semester.id
 
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 400
+        try:
+            course.services.registration_service.confirm_registration(semester_id ,student_id)
 
+            return jsonify({
+                "success": True,
+                "message": "Đủ điều kiện đăng ký",
+                "semester_id": semester_id
+            }), 200
 
-@app.route('/api/register-course/confirm', methods=['POST'])
-@login_required
-def confirm_register():
-    data = request.get_json()
-    mssv = current_user.username
-    student = dao.get_student_by_mssv(mssv)
-    if not student:
-        return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
-    student_id = student.id
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": str(e)
+            }), 400
 
-    try:
-        dao.confirm_registration(student_id)
+    @app.route('/api/course-register/<int:course_class_id>', methods=['DELETE'])
+    def unregister_course_route(course_class_id):
+        if not current_user.is_authenticated:
+            return jsonify({
+                "success": False,
+                "message": "Unauthorized"
+            }), 401
+        mssv = current_user.username
+        reg_semester = dao.get_registration_semester()
+        current_semester = dao.get_current_semester()
 
-        return jsonify({
-            "success": True,
-            "message": "Đủ điều kiện đăng ký"
-        }), 200
+        semester = reg_semester or current_semester
 
-    except Exception as e:
-        return jsonify({
-            "success": False,
-            "message": str(e)
-        }), 400
+        semester_id = semester.id
 
+        student = dao.get_student_by_mssv(mssv)
+        if not student:
+            return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
+        student_id = student.id
 
+        try:
+            registration_service.cancel_registration(semester_id, student_id, course_class_id)
 
-@app.route('/api/course-register/<int:course_class_id>', methods=['DELETE'])
-@login_required
-def unregister_course_route(course_class_id):
-    mssv = current_user.username
-    student = dao.get_student_by_mssv(mssv)
-    if not student:
-        return jsonify({"success": False, "message": "Sinh viên không tồn tại"}), 400
-    student_id = student.id
-
-    try:
-        dao.unregister_course(student_id, course_class_id)
-        return jsonify({
-            "success": True
-        }), 200
-    except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 400
+            return jsonify({
+                "success": True
+            }), 200
+        except BusinessException as e:
+            return jsonify({"success": False, "message": str(e)}), 400
+#
+# @app.route('/api/admin/auto-cancel', methods=['POST'])
+# def api_auto_cancel():
+#     print("===================")
+#     print("ADMIN ROLEE==============", current_user.role)
+#     if not current_user.is_authenticated:
+#         return jsonify({
+#             "success": False,
+#             "message": "Unauthorized"
+#         }), 401
+#
+#     if current_user.role != UserRole.ADMIN:
+#         return jsonify({
+#             "success": False,
+#             "message": "Permission Denied"
+#         }), 403
+#
+#     try:
+#         auto_cancel_job()
+#         return jsonify({
+#             "message": "Đã tự động huỷ đăng ký các sinh viên không đăng ký đủ tín chỉ"
+#         }), 200
+#
+#     except Exception as e:
+#         return jsonify({
+#             "message": str(e),
+#         }), 500

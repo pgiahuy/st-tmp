@@ -71,17 +71,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (checkbox.dataset.processing === '1') return;
         checkbox.dataset.processing = '1';
+
         const isChecked = checkbox.checked;
-
-        if (!isChecked) {
-            const confirmCancel = confirm('Bạn có chắc muốn huỷ lớp này?');
-            if (!confirmCancel) {
-                checkbox.checked = true;
-                checkbox.dataset.processing = '0';
-                return;
-            }
-        }
-
         checkbox.disabled = true;
 
         try {
@@ -90,7 +81,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     course_class_id: classId,
-                    action: isChecked ? 'register' : 'unregister'
                 })
             });
 
@@ -113,21 +103,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     const confirmBtn = document.getElementById('confirmBtn');
-    if (confirmBtn) {
-        confirmBtn.addEventListener('click', async () => {
-            try {
-                const res = await fetch('/api/register-course/confirm', { method: 'POST'});
-                const data = await res.json();
-                alert(data.success ? "Thành công: " + data.message : "Thất bại: " + data.message);
 
-                if (data.success) {
-                    window.location.reload();
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', async () => {
+                try {
+                    const res = await fetch('/api/register-course/confirm', {
+                        method: 'POST'
+                    });
+
+                    const data = await res.json();
+
+                    alert(data.success ? "Thành công: " + data.message : "Thất bại: " + data.message);
+
+                    if (data.success) {
+                        window.open(`/receipt/${data.semester_id}`, '_blank');
+                    }
+
+                } catch (err) {
+                    alert("Server error");
                 }
-            } catch (err) {
-                alert("Server error");
-            }
-        });
-    }
+            });
+        }
 
 
     document.querySelectorAll('.unregister-icon').forEach(icon => {

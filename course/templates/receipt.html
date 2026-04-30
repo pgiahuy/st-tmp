@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Phiếu đăng ký học phần</title>
+    <style>
+        body {
+            font-family: "Times New Roman", serif;
+            background: #f5f5f5;
+        }
+
+        .container {
+            width: 900px;
+            margin: 20px auto;
+            background: white;
+            padding: 30px;
+            border: 1px solid #ccc;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .school-info {
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .qr img {
+            width: 150px;
+        }
+
+        h2 {
+            text-align: center;
+            margin: 20px 0 5px;
+        }
+
+        .sub-title {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .info div {
+            width: 48%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th, td {
+            border: 1px solid #999;
+            padding: 6px;
+            text-align: center;
+        }
+
+        th {
+            background: #eee;
+        }
+
+        td.text-left {
+            text-align: left;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+        }
+    </style>
+</head>
+<body onload="window.print()">
+
+<div class="container">
+
+    <div class="header">
+        <div class="school-info">
+            <div><b>PHÒNG QUẢN LÝ ĐÀO TẠO</b></div>
+            <div>--------------------</div>
+        </div>
+
+    </div>
+
+    <h2>KẾT QUẢ ĐĂNG KÝ HỌC PHẦN</h2>
+    <div class="sub-title">
+        {{ semester.name }} - Năm học {{ semester.year }}
+    </div>
+
+    <div class="info">
+        <div>
+            <p><b>Họ và tên:</b> {{ student.full_name }}</p>
+            <p><b>Mã SV:</b> {{ student.mssv }}</p>
+            <p><b>Ngày in:</b> {{ now }}</p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+        <tr>
+            <th>STT</th>
+            <th>Mã MH</th>
+            <th class="text-left">Tên môn học</th>
+            <th>Số TC</th>
+            <th>Lớp</th>
+            <th>Ngày đăng ký</th>
+        </tr>
+        </thead>
+
+        <tbody>
+        {% for c in classes %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ c.course.course_code }}</td>
+            <td class="text-left">{{ c.course.course_name }}</td>
+            <td>{{ c.course.credits }}</td>
+            <td>{{ c.class_code }}</td>
+            <td>
+                {% if c.registrations %}
+                    {{ c.registrations[0].registered_at.strftime('%d/%m/%Y %H:%M:%S') }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <p class="mt-3"><b>Tổng số tín chí:</b> {{sum_credits}} tín chỉ</p>
+
+</div>
+
+</body>
+</html>

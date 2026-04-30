@@ -4,6 +4,38 @@
 {% endblock %}
 {% block body %}
 
+<div class="alert alert-success d-none" id="result_true"></div>
+<div class="alert alert-danger d-none" id="result_false"></div>
+
+<button id="btn-auto-cancel" class="btn btn-danger">
+    Huỷ đăng ký các sinh viên không đủ tín chỉ
+</button>
 
 
+<script>
+document.getElementById("btn-auto-cancel").onclick = async function () {
+
+    const successBox = document.getElementById("result_true");
+    const errorBox = document.getElementById("result_false");
+
+    successBox.classList.add("d-none");
+    errorBox.classList.add("d-none");
+
+    const res = await fetch("/api/admin/auto-cancel", {
+        method: "POST",
+        credentials: "include"
+    });
+
+    const data = await res.json();
+
+    if (res.status === 200) {
+        successBox.innerText =  data.message;
+        successBox.classList.remove("d-none");
+    } else {
+        errorBox.innerText =
+            `${data.error_type || "Lỗi"}: ${data.message}`;
+        errorBox.classList.remove("d-none");
+    }
+};
+</script>
 {% endblock %}

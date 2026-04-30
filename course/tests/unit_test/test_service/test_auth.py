@@ -1,5 +1,6 @@
+import hashlib
+
 import pytest
-from cloudinary.provisioning import Role
 
 from course.dao import auth_user, hash_password, validate_auth
 from course.models import User
@@ -12,6 +13,17 @@ def sample_user(test_session):
     test_session.add(user)
     test_session.commit()
     return user
+
+class TestHashPassword:
+    def test_hash_password(self, test_session):
+        plan_1 = hash_password("Abc1234@")
+        plan_2 = hashlib.md5("Abc1234@".strip().encode('utf-8')).hexdigest()
+
+        assert plan_1 == plan_2
+
+    def test_hash_password_none(self, test_session):
+        plan_1 = hash_password()
+        assert plan_1 is None
 
 class TestValidateAuth:
 
@@ -57,54 +69,54 @@ class TestValidateAuth:
 class TestLogin:
 
     def test_login_success(self, test_session, sample_user):
-        user = auth_user("admin", "admin", test_session)
+        user = auth_user("admin", "admin")
         assert user is not None
         assert user.username == "admin"
 
     def test_login_empty_username(self, test_session):
         with pytest.raises(ValueError):
-            auth_user("", "admin", test_session)
+            auth_user("", "admin")
 
     def test_login_empty_password(self, test_session, sample_user):
         with pytest.raises(ValueError):
-            auth_user("admin", "", test_session)
+            auth_user("admin", "")
 
     def test_login_none_username(self, test_session):
         with pytest.raises(ValueError):
-            auth_user(None, "admin", test_session)
+            auth_user(None, "admin")
 
     def test_login_none_password(self, test_session, sample_user):
         with pytest.raises(ValueError):
-            auth_user("admin", None, test_session)
+            auth_user("admin", None)
 
     def test_username_whitespace(self, test_session):
         with pytest.raises(ValueError):
-            auth_user("   ", "admin", test_session)
+            auth_user("   ", "admin")
 
     def test_password_whitespace(self, test_session):
         with pytest.raises(ValueError):
-            auth_user("admin", "   ", test_session)
+            auth_user("admin", "   ")
 
     def test_password_with_spaces(self, test_session, sample_user):
-        user = auth_user("admin", " admin   ", test_session)
+        user = auth_user("admin", " admin   ")
         assert user is not None
         assert user.username == "admin"
 
     def test_username_with_spaces(self, test_session, sample_user):
-        user = auth_user("  admin  ", "admin", test_session)
+        user = auth_user("  admin  ", "admin")
         assert user is not None
         assert user.username == "admin"
 
     def test_login_wrong_password(self, test_session, sample_user):
-        user = auth_user("admin", "123456", test_session)
+        user = auth_user("admin", "123456")
         assert user is None
 
     def test_user_not_found(self, test_session):
-        user = auth_user("gaihuy", "admin", test_session)
+        user = auth_user("gaihuy", "admin")
         assert user is None
 
     def test_login_upper_case(self,test_session, sample_user):
-        user = auth_user("Admin", "admin", test_session)
+        user = auth_user("Admin", "admin")
         assert user is not None
         assert user.username == "admin"
 
@@ -117,13 +129,13 @@ class TestLogin:
         test_session.add_all([u1, u2])
         test_session.commit()
 
-        user = auth_user("user1", "123", test_session)
+        user = auth_user("user1", "123")
         assert user.username == "user1"
 
     def test_sql_injection_username(self,test_session):
-        user = auth_user("' OR 1=1 --", "admin", test_session)
+        user = auth_user("' OR 1=1 --", "admin")
         assert user is None
 
     def test_sql_injection_password(self,test_session):
-        user = auth_user("admin", "' OR 1=1 --", test_session)
+        user = auth_user("admin", "' OR 1=1 --")
         assert user is None

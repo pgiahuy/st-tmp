@@ -99,16 +99,6 @@ body {
     position: relative;
 }
 
-#sidebar ul li.active > a::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 10%;
-    width: 4px;
-    height: 80%;
-    background: #93c5fd;
-    border-radius: 0 4px 4px 0;
-}
 
 /* ===== CONTENT ===== */
 #content {

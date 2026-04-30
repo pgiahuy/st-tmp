@@ -64,30 +64,30 @@ if __name__ == "__main__":
             db.session.add(s)
         db.session.commit()
 
-        # Load course classes
-        with open(os.path.join(os.path.dirname(__file__), 'data', 'course_classes.json'), encoding='utf-8') as f:
-            data = json.load(f)
-        for cls in data['course_classes']:
-            c_class = CourseClass(
-                class_code=cls['class_code'],
-                course_id=cls['course_id'],
-                room_id=cls['room_id'],
-                max_students=cls['max_students'],
-                semester_id=cls['semester_id']
-            )
-            db.session.add(c_class)
-        db.session.commit()
+        # # Load course classes
+        # with open(os.path.join(os.path.dirname(__file__), 'data', 'course_classes.json'), encoding='utf-8') as f:
+        #     data = json.load(f)
+        # for cls in data['course_classes']:
+        #     c_class = CourseClass(
+        #         class_code=cls['class_code'],
+        #         course_id=cls['course_id'],
+        #         room_id=cls['room_id'],
+        #         max_students=cls['max_students'],
+        #         semester_id=cls['semester_id']
+        #     )
+        #     db.session.add(c_class)
+        # db.session.commit()
 
-        # Load class schedules
-        with open(os.path.join(os.path.dirname(__file__), 'data', 'class_schedules.json'), encoding='utf-8') as f:
-            data = json.load(f)
-        for cs in data['class_schedules']:
-            assoc = CourseClassSchedule(
-                course_class_id=cs['course_class_id'],
-                slot_id=cs['slot_id']
-            )
-            db.session.add(assoc)
-        db.session.commit()
+        # # Load class schedules
+        # with open(os.path.join(os.path.dirname(__file__), 'data', 'class_schedules.json'), encoding='utf-8') as f:
+        #     data = json.load(f)
+        # for cs in data['class_schedules']:
+        #     assoc = CourseClassSchedule(
+        #         course_class_id=cs['course_class_id'],
+        #         slot_id=cs['slot_id']
+        #     )
+        #     db.session.add(assoc)
+        # db.session.commit()
 
         # Load prerequisites
         with open(os.path.join(os.path.dirname(__file__), 'data', 'prerequisites.json'), encoding='utf-8') as f:

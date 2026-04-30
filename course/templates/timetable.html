@@ -7,7 +7,7 @@
 <h3 class="mb-4 fw-bold mt-3">THỜI KHÓA BIỂU HỌC KỲ</h3>
 
 <div class="card shadow-sm p-4 mb-4">
-    <h5 class="fw-semibold mb-3">Thời khóa biểu - {{ semester_name }}</h5>
+    <h5 class="fw-semibold mb-3">Thời khóa biểu {{ semester_name }}</h5>
 
     <div class="table-responsive">
         <table class="table table-bordered text-center timetable-table align-middle">
@@ -55,7 +55,8 @@
     </div>
 </div>
 
-<h5 class="fw-bold mt-5 mb-3">Danh sách môn đã đăng ký ({{ student_classes|length }} môn)</h5>
+<h5 class="mt-5 mb-1">Danh sách môn đã đăng ký: <b>{{ student_classes|length }} môn</b></h5>
+<p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
 <table class="table table-bordered table-hover">
     <thead class="table-header">
         <tr class="text-center">
@@ -75,7 +76,7 @@
         <td>
             {% for assoc in c.schedule_associations %}
                 {% set slot = assoc.slot %}
-                {{ day_map[slot.weekday.value] }} - {{ slot.session.label }}<br>
+                {{ slot.weekday.label }} - {{ slot.session }}<br>
             {% endfor %}
         </td>
         <td>{{ c.room.name if c.room else '—' }}</td>
