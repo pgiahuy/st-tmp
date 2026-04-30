@@ -92,6 +92,10 @@ def test_cancel_fail_student_not_found(test_client,monkeypatch, sample_semester,
         "course.dao.get_student_by_mssv",
         lambda m: None
     )
+    monkeypatch.setattr(
+        "course.dao.get_registration_semester",
+        lambda: sample_semester
+    )
     res = test_client.delete("/api/course-register/1")
 
     assert res.status_code == 400
