@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -83,14 +84,22 @@ class TestCreateCourseClassService:
             "class_id": None
         }
 
-    def test_max_students_invalid_lt(self, mock_data):
+    def test_max_students_invalid_lt(self, mock_data,monkeypatch,sample_semester):
+        monkeypatch.setattr(
+            "course.services.course_management_service.dao.get_semester_by_id",
+            lambda x: sample_semester
+        )
         mock_data["max_students"] = 0
         with pytest.raises(BusinessException, match="Số sinh viên tối thiểu là 1"):
             course_management_service.handle_course_class_change_service(**mock_data)
 
 
-    def test_max_students_invalid_gt(self, mock_data):
+    def test_max_students_invalid_gt(self, mock_data, monkeypatch,sample_semester):
         mock_data["max_students"] = 51
+        monkeypatch.setattr(
+            "course.services.course_management_service.dao.get_semester_by_id",
+            lambda x: sample_semester
+        )
         with pytest.raises(BusinessException, match="Số sinh viên tối đa là"):
             course_management_service.handle_course_class_change_service(**mock_data)
 
@@ -141,6 +150,7 @@ def test_check_schedule_no_conflict(test_session, monkeypatch, sample_semester, 
 
     course_class = CourseClass(
         id=1,
+        class_index=1,
         room_id=room_id,
         semester_id=sample_semester.id,
         active=True
@@ -209,6 +219,7 @@ def test_check_schedule_conflict_found(test_session, monkeypatch, sample_semeste
 
     course_class = CourseClass(
         id=1,
+        class_index=1,
         room_id=sample_room[0].id,
         semester_id=sample_semester.id,
         active=True
