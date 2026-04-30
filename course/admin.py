@@ -1,3 +1,5 @@
+from datetime import date
+
 import markupsafe
 from click import Choice
 from flask import url_for, request, abort
@@ -134,7 +136,8 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         'room': 'Phòng học',
         'semester': 'Học kỳ',
         'max_students': 'Sĩ số tối đa',
-        'schedule_associations': 'Lịch học'
+        'schedule_associations': 'Lịch học',
+        'is_midterm_tested': 'Đã thi giữa kỳ'
     }
 
     def _student_count_formatter(view, context, model, name):
@@ -184,7 +187,10 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
             'validators': [DataRequired(message="Vui lòng chọn phòng học")]
         },
         'semester': {
-            'validators': [DataRequired(message="Vui lòng chọn học kỳ")]
+            'validators': [DataRequired(message="Vui lòng chọn học kỳ")],
+            'query_factory': lambda: Semester.query.filter(
+                Semester.end_date >= date.today()
+            ).all()
         },
         'class_code': {
             'validators': [DataRequired(message="Vui lòng nhập mã lớp")]
@@ -196,7 +202,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         '/static/js/admin_create_course_class.js'
     ]
 
-    form_excluded_columns = ('schedule_associations', 'registrations', 'created_date', 'active')
+    form_excluded_columns = ('schedule_associations', 'registrations', 'created_date', 'active','class_code','class_index')
 
     def on_form_prefill(self, form, id):
         model = self.get_one(id)
@@ -213,6 +219,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
             get_label=lambda s: f"{s.weekday.label} - {s.session}",
             validators=[DataRequired(message="Vui lòng chọn ít nhất 1 lịch học")]
         )
+
     }
 
     column_searchable_list = ['class_code']
@@ -230,6 +237,17 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         print("ADMIN TYPE MAXSTUYDENR++++++")
         print(type(form.max_students.data))
         try:
+            if is_created:
+                with db.session.no_autoflush:
+                    name, index = dao.get_next_course_class_name(
+                        course_id=form.course.data.id,
+                        semester_id=form.semester.data.id
+                    )
+
+                model.class_code = name
+                model.class_index = index
+
+
             model.schedule_associations = course_management_service.handle_course_class_change_service(
                 user_role=current_user.role,
                 semester_id=form.semester.data.id,
@@ -246,50 +264,6 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
 
         except Exception as e:
             raise ValidationError(f"Lỗi hệ thống: {str(e)}")
-
-    # def on_model_change(self, form, model, is_created):
-    #     selected_slots = form.slots_picker.data
-    #     room = form.room.data
-    #
-    #     print("======================")
-    #     print(room.id, room.name)
-    #
-    #     if not selected_slots or not room:
-    #         return
-    #
-    #     slot_ids = [s.id for s in selected_slots]
-    #     class_id = model.id if not is_created else None
-    #
-    #     try:
-    #         result = course_management_service.validate_course_class(
-    #             room.id,
-    #             slot_ids,
-    #             model.max_students,
-    #             class_id
-    #         )
-    #
-    #         if result:
-    #             conflict = result["conflict"]
-    #             slot = result["slot"]
-    #
-    #             time_info = (
-    #                 "Không xác định"
-    #                 if not slot
-    #                 else f"{slot.weekday.value} ({slot.session.label})"
-    #             )
-    #
-    #             raise ValidationError(
-    #                 f"Trùng lịch: Phòng {room.name} đã được sử dụng "
-    #                 f"bởi lớp '{conflict.class_code}' vào {time_info}"
-    #             )
-    #
-    #     except Exception as e:
-    #         raise ValidationError(str(e))
-    #
-    #     model.schedule_associations = course_management_service.build_schedule_associations(
-    #         model,
-    #         selected_slots
-    #     )
 
     def on_model_delete(self, model):
         try:

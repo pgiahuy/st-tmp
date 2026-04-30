@@ -1,8 +1,6 @@
 from flask_login import UserMixin
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Enum as SQLEnum, DateTime, func, Double
-from sqlalchemy.engine import default
-from sqlalchemy.orm import relationship
-from datetime import datetime, UTC
+from sqlalchemy.orm import relationship, validates
 from enum import Enum
 from course import db, app
 
@@ -128,12 +126,12 @@ class CourseClass(Base):
     __tablename__ = "course_classes"
 
     id = Column(Integer, primary_key=True)
-    class_code = Column(String(20), unique=True)
+    class_code = Column(String(20))
     course_id = Column(Integer, ForeignKey("courses.id"))
     room_id = Column(Integer, ForeignKey("rooms.id"))
     max_students = Column(Integer)
     is_midterm_tested = Column(Boolean, default=False)
-
+    class_index = db.Column(db.Integer, nullable=False)
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=False)
 
     schedule_associations = relationship(
@@ -142,13 +140,26 @@ class CourseClass(Base):
         cascade="all, delete-orphan"
     )
 
+    __table_args__ = (
+        db.UniqueConstraint('course_id', 'semester_id', 'class_index'),
+    )
+
     room = db.relationship("Room", backref="classes")
     registrations = db.relationship("Registration", backref="course_class")
     semester = db.relationship("Semester", backref="course_classes")
 
     @property
     def current_size(self):
-        return sum(1 for reg in self.registrations if reg.status == RegistrationStatus.REGISTERED)
+        return db.session.query(func.count(Registration.id)).filter(
+            Registration.course_class_id == self.id,
+            Registration.status == RegistrationStatus.REGISTERED
+        ).scalar()
+
+    @validates('max_students')
+    def validate_max_students(self, key, value):
+        if value <= 0:
+            raise ValueError("Sĩ số phải lớn hơn 0")
+        return value
 
 class ScheduleSlot(Base): #ca học
     __tablename__ = "schedule_slots"
