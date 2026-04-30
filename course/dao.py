@@ -1,4 +1,5 @@
 import hashlib
+import string
 from datetime import datetime, timedelta, date
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
@@ -383,3 +384,20 @@ def get_courses_by_ids(ids):
     if not ids:
         return []
     return db.session.query(Course).filter(Course.id.in_(ids)).all()
+
+def get_next_course_class_name(course_id, semester_id):
+    course = db.session.get(Course, course_id)
+    semester = get_semester_by_id(semester_id)
+
+    max_index = (db.session.query(func.max(CourseClass.class_index))
+                 .filter(
+                     CourseClass.course_id == course_id,
+                     CourseClass.semester_id == semester_id
+                 )
+                 .scalar())
+
+    next_index = (max_index or 0) + 1
+
+    name = f"{course.course_code}-{semester.name}-L{next_index:02d}"
+
+    return name, next_index

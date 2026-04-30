@@ -1,3 +1,5 @@
+from datetime import date
+
 from course import dao
 from course.exceptions import BusinessException, PermissionDeniedException
 from course.models import CourseClassSchedule, ConfigEnum, UserRole
@@ -61,6 +63,12 @@ def delete_course_class_service(user_role,course_class_id):
 def validate_course_class(semester_id, room_id , slot_ids, max_students, course_class_id=None):
     print("TYPEEEEE maxs_students=======")
     print(type(max_students), max_students)
+
+    semester = dao.get_semester_by_id(semester_id)
+    today = date.today()
+
+    if semester.end_date and today > semester.end_date:
+        raise BusinessException("Không thể tạo lớp cho học kỳ đã kết thúc")
 
 
     room = dao.get_room_by_id(room_id)
