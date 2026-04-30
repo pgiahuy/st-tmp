@@ -104,7 +104,7 @@ class TestStudentCancelCourseClassService:
         assert "sau 2 tuần" in str(e.value)
 
     def test_cancel_fail_after_midterm_test(self,sample_semester,sample_student,sample_course_class,sample_registration):
-        sample_registration.is_midterm_tested = True
+        sample_registration.course_class.is_midterm_tested = True
         with pytest.raises(BusinessException) as e:
             cancel_registration(sample_registration.semester_id, sample_student.id, sample_course_class.id)
         assert "đã thi giữa kỳ" in str(e.value)

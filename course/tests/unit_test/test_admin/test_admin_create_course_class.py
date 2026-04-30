@@ -71,11 +71,11 @@ def sample_course(test_session):
 class TestCreateCourseClassService:
 
     @pytest.fixture
-    def mock_data(self):
+    def mock_data(self,sample_room):
         return {
             "user_role": UserRole.ADMIN,
             "semester_id": 1,
-            "room_id": 10,
+            "room_id": sample_room[0].id,
             "slot_ids": [1, 2],
             "max_students": 30,
             "selected_slots_objects": [MagicMock(id=1), MagicMock(id=2)],
@@ -83,9 +83,15 @@ class TestCreateCourseClassService:
             "class_id": None
         }
 
-    def test_max_students_invalid(self, mock_data):
+    def test_max_students_invalid_lt(self, mock_data):
         mock_data["max_students"] = 0
-        with pytest.raises(BusinessException, match="Sĩ số tối đa"):
+        with pytest.raises(BusinessException, match="Số sinh viên tối thiểu là 1"):
+            course_management_service.handle_course_class_change_service(**mock_data)
+
+
+    def test_max_students_invalid_gt(self, mock_data):
+        mock_data["max_students"] = 51
+        with pytest.raises(BusinessException, match="Số sinh viên tối đa là"):
             course_management_service.handle_course_class_change_service(**mock_data)
 
     def test_permission_denied(self, mock_data):

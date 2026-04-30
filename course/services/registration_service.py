@@ -37,9 +37,17 @@ def register_course(semester_id , student_id, course_class_id):
         raise BusinessException("Không được đăng ký sau thời gian đăng ký môn!")
 
 
+    missing = dao.get_prerequisites_not_yet_study(semester_id, student_id, course_class_id)
+    if missing:
+        courses = dao.get_courses_by_ids(missing)
+        message = "; ".join(
+            f"{c.course_code} - {c.course_name}"
+            for c in courses
+        )
 
-    if not dao.check_studied_prerequisites( semester_id ,student_id, course_class_id):
-        raise BusinessException("Chưa hoàn thành môn tiên quyết!")
+        raise BusinessException(
+            "Chưa hoàn thành môn tiên quyết: " + message
+        )
 
     max_credits_limit = dao.get_config_value(ConfigEnum.MAX_CREDITS, 25)
 
@@ -75,12 +83,12 @@ def cancel_registration(semester_id, student_id, course_class_id):
         raise BusinessException("Sinh viên chưa đăng ký lớp này")
 
     now = datetime.now().date()
+    dl = dao.get_config_value(ConfigEnum.CANCEL_DEADLINE_DAYS, 14)
 
-
-    if reg.semester.start_date and now >= reg.semester.start_date + timedelta(days=14):
+    if reg.semester.start_date and now >= reg.semester.start_date + timedelta(days=dl):
         raise BusinessException("Không được huỷ môn sau 2 tuần bắt đầu học kỳ!")
 
-    if reg.is_midterm_tested is True:
+    if reg.course_class.is_midterm_tested is True:
         raise BusinessException("Không được huỷ sau khi đã thi giữa kỳ")
 
     dao.student_cancel_registration(reg)

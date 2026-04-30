@@ -66,7 +66,7 @@
             {% if item_url == '/admin' %}
             {% set active = (current_path == '/admin') %}
             {% else %}
-            {% set active = current_path.startswith(item_url) %}
+            {% set active = current_path == item_url or current_path.startswith(item_url + '/') %}
             {% endif %}
 
             <li class="{{ 'active' if active else '' }}">
@@ -133,8 +133,6 @@
             window.location.reload();
         }
     });
-</script>
-<script>
     $('#sidebarCollapse').on('click', function () {
         $('#sidebar').toggleClass('active');
         $('body').toggleClass('sidebar-collapsed');

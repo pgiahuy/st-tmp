@@ -5,69 +5,77 @@
 {% block content %}
 <div style="width:80%; margin:0 auto;">
 
-<div class="container mt-4">
-    <div class="card shadow p-3">
-        <h2 class="text-center mb-4">HỒ SƠ CÁ NHÂN</h2>
+    <div class="container mt-4">
+        <div class="card shadow p-3">
+            <h2 class="text-center mb-4">HỒ SƠ CÁ NHÂN</h2>
 
-        <div class="row">
+            <div class="row">
 
-            <div class="col-md-4 border-end">
-                <h4>Thông tin sinh viên</h4>
-                <br>
-                <p><strong>Họ tên:</strong>
-                    {{ current_user.student.full_name if current_user.student else "Chưa cập nhật" }}
-                </p>
-                <p><strong>MSSV:</strong>
-                    {{ current_user.student.mssv if current_user.student else "Chưa cập nhật" }}
-                </p>
-                <p><strong>Email:</strong>
-                    {{ current_user.student.email if current_user.student else "Chưa cập nhật" }}
-                </p>
+                <div class="col-md-4 border-end">
+                    <h4>Thông tin sinh viên</h4>
+                    <br>
+                    <p><strong>Họ tên:</strong>
+                        {{ current_user.student.full_name if current_user.student else "Chưa cập nhật" }}
+                    </p>
+                    <p><strong>MSSV:</strong>
+                        {{ current_user.student.mssv if current_user.student else "Chưa cập nhật" }}
+                    </p>
+                    <p><strong>Email:</strong>
+                        {{ current_user.student.email if current_user.student else "Chưa cập nhật" }}
+                    </p>
 
-                <hr>
+                    <hr>
 
-                <a href="/change-password" class="btn btn-warning w-30 mb-3">
-                    <i class="bi bi-lock-fill me-2"></i>Đổi mật khẩu
-                </a>
+                    <a href="/change-password" class="btn btn-warning w-30 mb-3">
+                        <i class="bi bi-lock-fill me-2"></i>Đổi mật khẩu
+                    </a>
+                </div>
+
+
+                <div class="col-md-8">
+                    <h4>Lớp đăng ký trong học kỳ hiện tại</h4>
+                    {%if error_msg%}
+                        <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>
+                                {{error_msg}}
+                            </div>
+                        </div>
+                    {%else%}
+                        <p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
+                        {% if current_user.student and current_user.student.registrations %}
+                        <table class="table table-sm table-striped">
+                            <thead>
+                            <tr>
+                                <th>Mã lớp</th>
+                                <th>Môn học</th>
+                                <th>Tín chỉ</th>
+                                <th>Phòng</th>
+
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for c in student_classes %}
+                            <tr>
+                                <td>{{ c.class_code }}</td>
+                                <td class="text-start">{{ c.course.course_name }}</td>
+                                <td class="text-center">{{ c.course.credits }}</td>
+
+                                <td>{{ c.room.name if c.room else '—' }}</td>
+
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <p>Chưa đăng ký lớp nào</p>
+                        {% endif %}
+                    {%endif%}
+                </div>
             </div>
 
-            <div class="col-md-8">
-                <h4 >Lớp đăng ký trong học kỳ hiện tại</h4>
 
-                <p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
-                {% if current_user.student and current_user.student.registrations %}
-                <table class="table table-sm table-striped">
-                    <thead>
-                    <tr>
-                        <th>Mã lớp</th>
-                        <th>Môn học</th>
-                        <th>Tín chỉ</th>
-                        <th>Phòng</th>
-
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {% for c in student_classes %}
-                    <tr>
-                        <td>{{ c.class_code }}</td>
-                        <td class="text-start">{{ c.course.course_name }}</td>
-                        <td class="text-center">{{ c.course.credits }}</td>
-
-                        <td>{{ c.room.name if c.room else '—' }}</td>
-
-                    </tr>
-                    {% endfor %}
-                    </tbody>
-                </table>
-                {% else %}
-                <p>Chưa đăng ký lớp nào</p>
-                {% endif %}
-
-            </div>
         </div>
-
-
     </div>
-</div>
 </div>
 {% endblock %}

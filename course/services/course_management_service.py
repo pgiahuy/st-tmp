@@ -8,12 +8,10 @@ def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids,
     print("TYPEEEEE maxs_students=======")
     print(type(max_students), max_students)
 
-    if max_students < 1:
-        raise BusinessException("Sĩ số tối đa không thể nhỏ hơn 1.")
-
 
     if user_role != UserRole.ADMIN:
         raise PermissionDeniedException()
+
 
     result = validate_course_class(
         semester_id,
@@ -63,11 +61,15 @@ def delete_course_class_service(user_role,course_class_id):
 def validate_course_class(semester_id, room_id , slot_ids, max_students, course_class_id=None):
     print("TYPEEEEE maxs_students=======")
     print(type(max_students), max_students)
-    room = dao.get_room__by_id(room_id)
+
+
+    room = dao.get_room_by_id(room_id)
     if not room:
         raise ValueError("Room not found")
 
-    validate_max_students(room, max_students)
+    max_limit = dao.get_config_value(ConfigEnum.MAX_STUDENTS_PER_CLASS, 50)
+
+    validate_max_students(room, max_students,max_limit)
 
     conflict = validate_schedule_conflict(
         semester_id, room, slot_ids, course_class_id
@@ -76,14 +78,16 @@ def validate_course_class(semester_id, room_id , slot_ids, max_students, course_
     return conflict
 
 # như tên:)
-def validate_max_students(room, max_students):
-    max_limit = dao.get_config_value(ConfigEnum.MAX_STUDENTS_PER_CLASS, 50)
-
+def validate_max_students(room, max_students, max_limit):
     limit = min(max_limit, room.capacity)
 
     if max_students > limit:
         raise BusinessException(
             f"Số sinh viên tối đa là {limit} (do giới hạn lớp và phòng)"
+        )
+    if max_students < 1:
+        raise BusinessException(
+            f"Số sinh viên tối thiểu là 1"
         )
 
 # trùng lịch

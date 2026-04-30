@@ -6,7 +6,9 @@ def auto_cancel_job():
     semester = dao.get_current_semester()
     print('current_semester:', semester)
 
-    if not semester or semester.is_auto_cancelled:
+    if not semester:
+        raise Exception("Không có học kỳ đang mở!")
+    if semester.is_auto_cancelled:
         raise Exception("Học kỳ này đã quét danh sách!")
 
     semester_id = semester.id

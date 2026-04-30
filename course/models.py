@@ -11,6 +11,7 @@ class ConfigEnum(Enum):
     MAX_CREDITS = "MAX_CREDITS"
     MIN_CREDITS = "MIN_CREDITS"
     MAX_STUDENTS_PER_CLASS = "MAX_STUDENTS_PER_CLASS"
+    CANCEL_DEADLINE_DAYS = "CANCEL_DEADLINE_DAYS"
 
 class UserRole(Enum):
     USER = (1, "Sinh viên")
@@ -131,6 +132,8 @@ class CourseClass(Base):
     course_id = Column(Integer, ForeignKey("courses.id"))
     room_id = Column(Integer, ForeignKey("rooms.id"))
     max_students = Column(Integer)
+    is_midterm_tested = Column(Boolean, default=False)
+
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=False)
 
     schedule_associations = relationship(
@@ -189,7 +192,7 @@ class Registration(Base):
     status = Column(SQLEnum(RegistrationStatus), default=RegistrationStatus.REGISTERED)
 
     registered_at = Column(DateTime, default=func.now())
-    is_midterm_tested = Column(Boolean,default=False)
+
     __table_args__ = (
         db.UniqueConstraint('student_id', 'course_class_id', name='unique_registration'),
     )

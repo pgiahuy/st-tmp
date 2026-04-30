@@ -1,5 +1,5 @@
 import hashlib
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
@@ -41,14 +41,10 @@ def get_course_class_ids_student_registered(semester_id, student_id):
         return []
     return [reg.course_class_id for reg in regis ]
 
-def get_course_classes_in_reg_semester(course_id=None, kw=None):
-
-    semester = get_registration_semester()
-    if not semester:
-        raise Exception('No semester found')
+def get_course_classes_in_reg_semester(semester_id= None, course_id=None, kw=None):
 
     query = CourseClass.query.filter(
-        CourseClass.semester_id == semester.id,
+        CourseClass.semester_id == semester_id,
         CourseClass.active == True
     )
 
@@ -89,7 +85,7 @@ def get_all_course_classes():
     return CourseClass.query.filter(CourseClass.active == True).all()
 
 
-def get_conflicting_class(student_id, course_class_id, reg_semester_id):
+def get_conflicting_class(student_id, course_class_id, reg_semester_id =  None):
 
     new_class = db.session.get(CourseClass, course_class_id)
     if not new_class or not reg_semester_id:
@@ -138,13 +134,11 @@ def course_class_is_full(course_class_id):
     count = db.session.query(Registration).filter_by(course_class_id=course_class_id, status = RegistrationStatus.REGISTERED).count()
     return count >= course_class.max_students
 
-# all lớp trong kì
-def get_courses_by_current_reg_semester():
-    semester = get_registration_semester()
-    if not semester:
-        return []
+# all môn trong kì
+def get_courses_by_current_reg_semester(semester_id=None):
+
     courses = (db.session.query(Course).join(CourseClass)
-               .filter(CourseClass.semester_id == semester.id)
+               .filter(CourseClass.semester_id == semester_id)
                .distinct().all())
     return courses
 
@@ -178,16 +172,16 @@ def check_student_enough_credits_in_semester(semester_id , student_id):
     # return registered_classes
 
 def get_current_semester():
-    today = datetime.now()
+    today = date.today()
     return Semester.query.filter(
         Semester.start_date <= today,
         Semester.end_date >= today
     ).first()
 
 def get_registration_semester():
-    today = datetime.now().date()
-    return (Semester.query.filter(Semester.start_registration_date <= today,
-                                 Semester.end_registration_date >= today).first())
+    now = date.today()
+    return (Semester.query.filter(Semester.start_registration_date <= now,
+                                 Semester.end_registration_date >= now).first())
 
 
 def get_total_credits(student_id, semester_id):
@@ -243,7 +237,7 @@ def get_all_student_studied(semester_id , student_id):
         if semester and reg.semester_id == semester_id:
             continue
 
-        if reg.course_class and reg.course_class.course:
+        if reg.course_class and reg.course_class.course and reg.status == RegistrationStatus.REGISTERED:
             student_studied.append(reg.course_class.course.id)
 
     return set(student_studied)
@@ -262,20 +256,18 @@ def check_duplicate_in_semester(semester_id ,student_id, course_class_id):
     return False
 
 
-def check_studied_prerequisites(semester_id, student_id, course_class_id):
+def get_prerequisites_not_yet_study(semester_id, student_id, course_class_id):
     course_class = get_course_class_by_id(course_class_id)
     course = course_class.course
 
+    #list(id)
     student_studied = get_all_student_studied(semester_id ,student_id)
 
     prerequisite_list = CoursePrerequisite.query.filter_by(course_id=course.id).all()
     prerequisite_ids = [pr.prerequisite_id for pr in prerequisite_list]
 
-    if not prerequisite_ids:
-        return True
-
-    return all(pr in student_studied for pr in prerequisite_ids)
-
+    missing = [pr for pr in prerequisite_ids if pr not in student_studied]
+    return missing
 
 
 def change_password(user_id, new_password):
@@ -289,7 +281,7 @@ def change_password(user_id, new_password):
 # def get_courses_by_id(course_id):
 #     return Course.query.get(course_id)
 
-def get_room__by_id(room_id):
+def get_room_by_id(room_id):
     return db.session.get(Room,room_id)
 
 def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=None):
@@ -306,7 +298,7 @@ def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=N
         CourseClass.active == True
     )
 
-    if current_class_id:
+    if current_class_id: # by_pass khi update
         query = query.filter(CourseClass.id != current_class_id)
 
     new_slots = db.session.query(ScheduleSlot).filter(ScheduleSlot.id.in_(slot_ids)).all()
@@ -358,3 +350,36 @@ def register_course(semester_id, student_id, course_class_id):
     except Exception:
         db.session.rollback()
         raise
+
+def get_next_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.start_registration_date > now
+    ).order_by(
+        Semester.start_registration_date.asc()
+    ).first()
+
+
+def get_review_registration_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.start_registration_date <= now + timedelta(days=1),
+        Semester.end_registration_date >= now
+    ).order_by(
+        Semester.start_registration_date.asc()
+    ).first()
+
+def get_recent_past_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.end_date < now
+    ).order_by(Semester.end_date.desc()).first()
+
+
+def get_courses_by_ids(ids):
+    if not ids:
+        return []
+    return db.session.query(Course).filter(Course.id.in_(ids)).all()
