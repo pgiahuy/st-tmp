@@ -71,7 +71,7 @@ def validate_course_class(semester_id, room_id , slot_ids, max_students, course_
         raise BusinessException("Không thể tạo lớp cho học kỳ đã kết thúc")
 
 
-    room =  dao.get_room_by_id(room_id)
+    room = dao.get_room_by_id(room_id)
     if not room:
         raise ValueError("Room not found")
 
