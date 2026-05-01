@@ -61,8 +61,7 @@
                                 <td class="text-start">{{ c.course.course_name }}</td>
                                 <td class="text-center">{{ c.course.credits }}</td>
 
-                                <td>{{ c.room.name if c.room else '—' }}</td>
-
+                                <td>{{ c.schedule_associations[0].room.name if c.schedule_associations[0].room else '—' }}</td>
                             </tr>
                             {% endfor %}
                             </tbody>
