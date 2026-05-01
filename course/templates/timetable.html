@@ -39,7 +39,7 @@
                                             {{ c.course.course_code }} - {{ c.course.course_name|truncate(38) }}
                                         </div>
                                         <small>Lớp: {{ c.class_code }}</small><br>
-                                        <small>Phòng: {{ c.room.name if c.room else '—' }}</small>
+                                        <small>Phòng: {{ c.schedule_associations[0].room.name if c.schedule_associations[0].room else '—' }}</small>
                                     </div>
                                     {% set ns.found = true %}
                                 {% endif %}
@@ -79,7 +79,7 @@
                 {{ slot.weekday.label }} - {{ slot.session }}<br>
             {% endfor %}
         </td>
-        <td>{{ c.room.name if c.room else '—' }}</td>
+        <td>{{ c.schedule_associations[0].room.name if c.schedule_associations[0].room else '—' }}</td>
     </tr>
     {% else %}
     <tr>

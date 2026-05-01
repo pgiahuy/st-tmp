@@ -32,12 +32,6 @@ class Day(Enum):
         self._value_ = value
         self.label = label
 
-
-class RegistrationStatus(Enum):
-    REGISTERED = "REGISTERED"
-    STUDENT_CANCELLED = "STUDENT_CANCELLED",
-    SYSTEM_CANCELLED = "SYSTEM_CANCELLED"
-
 class Session(Enum):
     MORNING   = ("Sáng",     "07:30", "12:00")
     AFTERNOON = ("Chiều",    "13:00", "17:30")
@@ -54,6 +48,13 @@ class Session(Enum):
     @property
     def display(self):
         return f"{self.label}<br><small class='text-muted'>({self.start_time} - {self.end_time})</small>"
+
+class RegistrationStatus(Enum):
+    REGISTERED = "REGISTERED"
+    STUDENT_CANCELLED = "STUDENT_CANCELLED"
+    SYSTEM_CANCELLED = "SYSTEM_CANCELLED"
+
+
 
 
 
@@ -111,31 +112,38 @@ class Course(Base):
     )
 
 
-class CourseClassSchedule(Base):
-    __tablename__ = "course_class_schedule_assoc"
-    id = None
+class CourseClassScheduleRoom(Base):
+    __tablename__ = "class_schedules"
 
-    course_class_id = Column(Integer, ForeignKey("course_classes.id"), primary_key=True)
-    slot_id = Column(Integer, ForeignKey("schedule_slots.id"), primary_key=True)
+    course_class_id = Column(ForeignKey("course_classes.id"))
+    slot_id = Column(ForeignKey("schedule_slots.id"))
+    room_id = Column(ForeignKey("rooms.id"))
+    semester_id = Column(ForeignKey("semesters.id"), nullable=False)
 
+    __table_args__ = (
+        db.UniqueConstraint('course_class_id', 'slot_id'),
+        db.UniqueConstraint('slot_id', 'room_id','semester_id')
+    )
     course_class = relationship("CourseClass", back_populates="schedule_associations")
-    slot = relationship("ScheduleSlot", back_populates="class_associations")
+    slot = relationship("ScheduleSlot", back_populates="schedules")
+    room = relationship("Room", back_populates="schedules")
+    semester = relationship("Semester", backref="class_schedules")
+
 
 
 class CourseClass(Base):
     __tablename__ = "course_classes"
 
     id = Column(Integer, primary_key=True)
-    class_code = Column(String(20))
+    class_code = Column(String(255))
     course_id = Column(Integer, ForeignKey("courses.id"))
-    room_id = Column(Integer, ForeignKey("rooms.id"))
     max_students = Column(Integer)
     is_midterm_tested = Column(Boolean, default=False)
     class_index = db.Column(db.Integer, nullable=False)
     semester_id = Column(Integer, ForeignKey("semesters.id"), nullable=False)
 
     schedule_associations = relationship(
-        "CourseClassSchedule",
+        "CourseClassScheduleRoom",
         back_populates="course_class",
         cascade="all, delete-orphan"
     )
@@ -144,7 +152,6 @@ class CourseClass(Base):
         db.UniqueConstraint('course_id', 'semester_id', 'class_index'),
     )
 
-    room = db.relationship("Room", backref="classes")
     registrations = db.relationship("Registration", backref="course_class")
     semester = db.relationship("Semester", backref="course_classes")
 
@@ -164,19 +171,29 @@ class CourseClass(Base):
 class ScheduleSlot(Base): #ca học
     __tablename__ = "schedule_slots"
 
-    id = Column(Integer, primary_key=True)
     weekday = Column(SQLEnum(Day), nullable=False)
     session = Column(SQLEnum(Session), nullable=False)
 
-    class_associations = relationship("CourseClassSchedule", back_populates="slot")
-
+    schedules = relationship(
+        "CourseClassScheduleRoom",
+        back_populates="slot",
+        cascade="all, delete-orphan"
+    )
+    __table_args__ = (
+        db.UniqueConstraint('weekday', 'session', name='unique_slot'),
+    )
 
 class Room(Base):
     __tablename__ = "rooms"
+
     name = Column(String(50), unique=True, nullable=False)
     capacity = Column(Integer, nullable=False)
 
-
+    schedules = relationship(
+        "CourseClassScheduleRoom",
+        back_populates="room",
+        cascade="all, delete-orphan"
+    )
 
 class Semester(Base):
     __tablename__ = "semesters"

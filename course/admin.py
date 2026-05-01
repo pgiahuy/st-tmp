@@ -2,13 +2,15 @@ from datetime import date
 
 import markupsafe
 from click import Choice
-from flask import url_for, request, abort
+from flask import url_for, request, abort, session, flash
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import InlineModelFormList, QuerySelectMultipleField, QuerySelectField
 from flask_admin.form import DatePickerWidget
 from flask_login import current_user
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import redirect
+from wtforms.fields.choices import SelectField
 from wtforms.fields.datetime import DateField
 from wtforms.validators import ValidationError, DataRequired, NumberRange
 
@@ -16,7 +18,7 @@ import course.utils
 from course import app, db, dao, utils, services
 from course.exceptions import BusinessException
 from course.models import UserRole, Course, Student, User, CourseClass, Room, SystemConfig, Registration, Semester, \
-    ScheduleSlot, CourseClassSchedule, CoursePrerequisite
+    ScheduleSlot, CourseClassScheduleRoom, CoursePrerequisite
 from course.services import course_management_service
 
 
@@ -40,8 +42,8 @@ class MyAdminHome(AdminAccessMixin, AdminIndexView):
 
 
 
-
 class MyAdminModelView(AdminAccessMixin, ModelView):
+
     can_create = True
     can_edit = True
     can_delete = True
@@ -120,25 +122,26 @@ class CourseAdmin(AdminAccessMixin, ModelView):
     form_excluded_columns = ['classes', 'created_date','required_for']
 
 
-class CourseClassAdmin(AdminAccessMixin, ModelView):
+class CourseClassAdmin(MyAdminModelView):
     column_list = (
         'class_code',
         'course',
-        'room',
         'max_students',
         'schedule_associations',
-        'semester'
+        'semester',
+
     )
 
     column_labels = {
         'class_code': 'Mã lớp',
         'course': 'Môn học',
-        'room': 'Phòng học',
         'semester': 'Học kỳ',
         'max_students': 'Sĩ số tối đa',
         'schedule_associations': 'Lịch học',
-        'is_midterm_tested': 'Đã thi giữa kỳ'
+        'is_midterm_tested': 'Đã thi giữa kỳ',
     }
+
+
 
     def _student_count_formatter(view, context, model, name):
         current_count = dao.count_course_registrations(model.id)
@@ -182,9 +185,7 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
                 NumberRange(min=1, message="Sĩ số không được bé hơn 1"),
                 NumberRange(max=50, message="Sĩ số không được lớn hơn 50")
             ]
-        },
-        'room': {
-            'validators': [DataRequired(message="Vui lòng chọn phòng học")]
+
         },
         'semester': {
             'validators': [DataRequired(message="Vui lòng chọn học kỳ")],
@@ -197,10 +198,6 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
         }
 
     }
-
-    extra_js = [
-        '/static/js/admin_create_course_class.js'
-    ]
 
     form_excluded_columns = ('schedule_associations', 'registrations', 'created_date', 'active','class_code','class_index')
 
@@ -218,12 +215,22 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
             query_factory=lambda: ScheduleSlot.query.all(),
             get_label=lambda s: f"{s.weekday.label} - {s.session}",
             validators=[DataRequired(message="Vui lòng chọn ít nhất 1 lịch học")]
-        )
-
+        ),
+        'room': QuerySelectField(
+        'Phòng',
+        query_factory=lambda: Room.query,
+        get_label='name',
+        allow_blank=False
+    )
     }
 
+    extra_js = [
+        '/static/js/admin_create_course_class.js',
+        '/static/js/add_course_class.js'
+    ]
+
     column_searchable_list = ['class_code']
-    column_filters = ['room.name', 'course.course_name', 'semester']
+    column_filters = ['course.course_name', 'semester']
 
     def on_model_change(self, form, model, is_created):
 
@@ -249,6 +256,9 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
                 model.class_code = name
                 model.class_index = index
 
+                # db.session.add(model)
+                # db.session.flush()
+
             print(form._fields.keys())
 
             with db.session.no_autoflush:
@@ -264,7 +274,11 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
                     class_id=class_id
                 )
 
-            model.schedule_associations = result
+            model.schedule_associations.clear()
+            db.session.flush()
+
+            for assoc in result:
+                model.schedule_associations.append(assoc)
 
 
         except (BusinessException, ValueError) as e:
@@ -281,8 +295,17 @@ class CourseClassAdmin(AdminAccessMixin, ModelView):
 
 
 class ScheduleSlotAdmin(AdminAccessMixin, ModelView):
-    form_excluded_columns = ('created_date', 'active','class_associations')
+    form_excluded_columns = ('created_date', 'active','class_associations','schedules')
 
+    def handle_view_exception(self, exc):
+        if isinstance(exc, IntegrityError):
+            flash("Ca học đã tồn tại!", "error")
+            return True
+
+        return super().handle_view_exception(exc)
+
+class CourseClassScheduleRoomAdmin(AdminAccessMixin, ModelView):
+    pass
 
 class RegistrationAdmin(AdminAccessMixin, ModelView):
     can_create = False
@@ -304,7 +327,7 @@ class RegistrationAdmin(AdminAccessMixin, ModelView):
 
 
 class SemesterAdmin(AdminAccessMixin, ModelView):
-    column_list = ( 'name', 'year', 'start_date','end_date', 'start_registration_date', 'end_registration_date')
+    column_list = ( 'name', 'year', 'start_date','end_date', 'start_registration_date', 'end_registration_date', 'is_auto_cancelled')
 
     column_searchable_list = ('name', 'year')
 
@@ -316,8 +339,19 @@ class SemesterAdmin(AdminAccessMixin, ModelView):
         'start_date': 'Bắt đầu',
         'end_date':'Kết thúc',
         'start_registration_date':'Mở đăng ký',
-        'end_registration_date':'Đóng đăng ký'
+        'end_registration_date':'Đóng đăng ký',
+        'is_auto_cancelled': 'Quét huỷ'
     }
+
+    form_columns = [
+        'name',
+        'year',
+        'start_registration_date',
+        'end_registration_date',
+        'start_date',
+        'end_date',
+        'active'
+    ]
 
 
 
@@ -337,6 +371,25 @@ class SemesterAdmin(AdminAccessMixin, ModelView):
 
     form_excluded_columns = ('created_date', 'registrations','course_classes')
 
+    def on_model_change(self, form, model, is_created):
+
+        if not (
+                model.start_registration_date
+                and model.end_registration_date
+                and model.start_date
+                and model.end_date
+        ):
+            raise ValidationError("Vui lòng nhập đầy đủ các ngày")
+
+        if model.start_registration_date >= model.end_registration_date:
+            raise ValidationError("Ngày Mở đăng ký phải trước ngày Đóng đăng ký")
+
+        if model.end_registration_date >= model.start_date:
+            raise ValidationError("Ngày Đóng đăng ký phải trước ngày Bắt đầu học kỳ")
+
+        if model.start_date >= model.end_date:
+            raise ValidationError("Ngày Bắt đầu học kỳ phải trước ngày Kết thúc học kỳ")
+
 
 class RoomAdmin(AdminAccessMixin, ModelView):
     column_labels = {
@@ -344,7 +397,15 @@ class RoomAdmin(AdminAccessMixin, ModelView):
         'name': 'Tên phòng',
         'capacity': 'Chỗ ngồi sinh viên'
     }
-    form_excluded_columns = ('created_date', 'classes')
+    form_excluded_columns = ('created_date', 'classes','schedules')
+
+    form_args = {
+        'capacity': {
+            'validators': [
+                NumberRange(min=1, max=100)
+            ]
+        }
+    }
 
 
 class RuleAdmin(AdminAccessMixin, ModelView):

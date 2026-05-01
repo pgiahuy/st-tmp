@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from course import db
 from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite, \
-    CourseClassSchedule, SystemConfig, ScheduleSlot, Room, RegistrationStatus, ConfigEnum
+    CourseClassScheduleRoom, SystemConfig, ScheduleSlot, Room, RegistrationStatus, ConfigEnum
 
 
 def hash_password(password = None):
@@ -285,35 +285,26 @@ def change_password(user_id, new_password):
 def get_room_by_id(room_id):
     return db.session.get(Room,room_id)
 
-def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=None):
 
-    query = db.session.query(CourseClass).join(
-        CourseClassSchedule,
-        CourseClass.id == CourseClassSchedule.course_class_id
-    ).join(
-        ScheduleSlot,
-        CourseClassSchedule.slot_id == ScheduleSlot.id
+# check lại
+def check_schedule_conflict(semester_id, room_id, slot_ids, current_class_id=None):
+    query = db.session.query(CourseClassScheduleRoom).join(
+        CourseClass,
+        CourseClass.id == CourseClassScheduleRoom.course_class_id
     ).filter(
-        CourseClass.room_id == room_id,
-        CourseClass.semester_id == semester_id,
+        CourseClassScheduleRoom.room_id == room_id,
+        CourseClassScheduleRoom.semester_id == semester_id,
         CourseClass.active == True
     )
 
-    if current_class_id: # by_pass khi update
-        query = query.filter(CourseClass.id != current_class_id)
+    if current_class_id:
+        query = query.filter(CourseClassScheduleRoom.course_class_id != current_class_id)
 
-    new_slots = db.session.query(ScheduleSlot).filter(ScheduleSlot.id.in_(slot_ids)).all()
+    conflict = query.filter(
+        CourseClassScheduleRoom.slot_id.in_(slot_ids)
+    ).first()
 
-    for ns in new_slots:
-        conflict = query.filter(
-            ScheduleSlot.weekday == ns.weekday,
-            ScheduleSlot.session == ns.session
-        ).first()
-
-        if conflict:
-            return conflict
-
-    return None
+    return conflict
 
 
 def count_course_registrations( course_class_id):

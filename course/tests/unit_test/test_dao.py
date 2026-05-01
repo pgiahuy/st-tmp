@@ -71,7 +71,6 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
         class_code="KTLT01",
         class_index = 1,
         course_id=sample_course[0].id,
-        room_id=sample_room[0].id,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=True
@@ -80,7 +79,6 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
         class_code="KTLT02",
         class_index=2,
         course_id=sample_course[0].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=True
@@ -89,7 +87,6 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
         class_code="CNPM01",
         class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=True
@@ -98,7 +95,6 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
         class_code="CNPM02",
         class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[1].id,
         max_students=40,
         active=True
@@ -107,7 +103,6 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
         class_code="CNPM03",
         class_index=2,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[1].id,
         max_students=40,
         active=False

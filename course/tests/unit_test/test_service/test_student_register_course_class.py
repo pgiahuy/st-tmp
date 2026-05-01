@@ -77,7 +77,6 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
         class_code="KTLT",
         class_index=1,
         course_id=sample_course[0].id,
-        room_id=sample_room[0].id,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=True
@@ -96,7 +95,6 @@ def sample_course_class_full_slot(test_session, sample_course, sample_room, samp
         class_code="CNPM",
         class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
         max_students=1,
         active=True
@@ -113,7 +111,6 @@ def sample_course_class_need_prerequisite(test_session, sample_course, sample_ro
         class_code="CNPM",
         class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[1].id,
         max_students=40,
         active=True
@@ -140,7 +137,6 @@ def sample_course_class_conflict_1(test_session, sample_course, sample_room, sam
         class_code="KTLT",
         class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
         max_students=50,
         active=True
@@ -156,7 +152,6 @@ def sample_course_class_conflict_2(test_session, sample_course, sample_room, sam
         class_code="CNPM",
         class_index=2,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
         max_students=50,
         active=True
@@ -167,14 +162,19 @@ def sample_course_class_conflict_2(test_session, sample_course, sample_room, sam
     return course_class_1
 
 @pytest.fixture
-def sample_course_class_schedule(test_session, sample_course_class_conflict_1, sample_course_class_conflict_2, sample_schedule_slots):
-    assoc1 = CourseClassSchedule(
+def sample_course_class_schedule(test_session,sample_semester,sample_room, sample_course_class_conflict_1, sample_course_class_conflict_2, sample_schedule_slots):
+    assoc1 = CourseClassScheduleRoom(
         course_class_id=sample_course_class_conflict_1.id,
-        slot_id=sample_schedule_slots.id
+        slot_id=sample_schedule_slots.id,
+        room=sample_room[0],
+        semester_id=sample_semester[0].id
     )
-    assoc2 = CourseClassSchedule(
+
+    assoc2 = CourseClassScheduleRoom(
         course_class_id=sample_course_class_conflict_2.id,
-        slot_id=sample_schedule_slots.id
+        slot_id=sample_schedule_slots.id,
+        room=sample_room[0],
+        semester_id=sample_semester[0].id
     )
     test_session.add_all([assoc1, assoc2])
     test_session.commit()
@@ -282,8 +282,23 @@ def test_register_fail_full_slot(test_session, monkeypatch, sample_semester, sam
         register_course(sample_semester[0].id, sample_student.id, sample_course_class_full_slot.id)
     assert "đã đầy" in str(e.value)
 
-def test_register_conflict(test_session, monkeypatch, sample_semester, sample_student,sample_course_class_schedule,
-                           sample_course_class_conflict_1, sample_course_class_conflict_2):
+def test_register_conflict(test_session, monkeypatch, sample_semester, sample_student,
+                           sample_course_class_conflict_1, sample_course_class_conflict_2,sample_schedule_slots,sample_room):
+    assoc1 = CourseClassScheduleRoom(
+        course_class_id=sample_course_class_conflict_1.id,
+        slot_id=sample_schedule_slots.id,
+        room_id=sample_room[0].id,
+        semester_id=sample_semester[0].id
+    )
+
+    assoc2 = CourseClassScheduleRoom(
+        course_class_id=sample_course_class_conflict_2.id,
+        slot_id=sample_schedule_slots.id,
+        room_id=sample_room[1].id,
+        semester_id=sample_semester[0].id
+    )
+    test_session.add_all([assoc1, assoc2])
+    test_session.commit()
 
     register_course(sample_semester[0].id, sample_student.id, sample_course_class_conflict_1.id)
 
@@ -307,7 +322,6 @@ def test_register_fail_inactive_class(test_session,monkeypatch, sample_course, s
         class_code="WEB",
         class_index=1,
         course_id=sample_course[0].id,
-        room_id=sample_room[0].id,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=False

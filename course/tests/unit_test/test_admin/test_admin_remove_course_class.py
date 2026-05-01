@@ -75,7 +75,6 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
         class_code="KTPM",
         class_index=1,
         course_id=sample_course[0].id,
-        room_id=sample_room[0].id,
         semester_id=sample_semester.id,
         max_students=40,
         active=True
@@ -91,7 +90,6 @@ def sample_course_class_none(test_session, sample_course, sample_room, sample_se
         class_code="CNPM",
         class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester.id,
         max_students=40,
         active=True
