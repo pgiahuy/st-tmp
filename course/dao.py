@@ -427,3 +427,15 @@ def find_course_class_by_unique_keys(course_id, semester_id, class_index, exclud
         query = query.filter(CourseClass.id != exclude_id)
 
     return query.first()
+
+
+def check_unactive_course(course_id):
+
+    course_class_usage = Registration.query.join(CourseClass).filter(
+        CourseClass.course_id == course_id
+    ).first()
+
+    if course_class_usage:
+        return False
+
+    return True
