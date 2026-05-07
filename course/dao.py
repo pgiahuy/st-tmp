@@ -370,6 +370,15 @@ def get_recent_past_semester():
         Semester.end_date < now
     ).order_by(Semester.end_date.desc()).first()
 
+def get_recent_past_regis_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.end_registration_date < now
+    ).order_by(Semester.end_registration_date.desc()).first()
+
+def get_semesters():
+    return db.session.query(Semester).all()
 
 def get_courses_by_ids(ids):
     if not ids:

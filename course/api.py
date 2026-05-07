@@ -133,6 +133,21 @@ def register_api(app):
             for r in rooms
         ])
 
+    @app.route("/api/secure/registered-on-semester")
+    def secure_registered_on_semester():
+        semester_id = request.args.get("semester_id")
+        if not semester_id:
+            return 404
+
+        student_id = dao.get_student_id_by_mssv(current_user.username)
+
+        student_classes = dao.get_course_classes_student_registered(semester_id, student_id)
+
+        return jsonify({
+            "success": True,
+            "student_classes": student_classes
+        })
+
 #
 # @app.route('/api/admin/auto-cancel', methods=['POST'])
 # def api_auto_cancel():
