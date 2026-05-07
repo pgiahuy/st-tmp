@@ -167,4 +167,8 @@ def validate_schedule_conflict(semester_id,room_id, slot_ids, course_class_id):
 def check_unactive_course(course_id):
     return dao.check_unactive_course(course_id)
 
+# lowps
+def check_unactive_course_class(course_class_id):
+    return dao.check_course_class_have_not_registration(course_class_id)
+
 
