@@ -2,7 +2,7 @@ from datetime import date
 
 from course import dao, db
 from course.exceptions import BusinessException, PermissionDeniedException
-from course.models import CourseClassScheduleRoom, ConfigEnum, UserRole
+from course.models import CourseClassScheduleRoom, ConfigEnum, UserRole, Course
 
 
 def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids, max_students,
@@ -162,4 +162,9 @@ def validate_schedule_conflict(semester_id,room_id, slot_ids, course_class_id):
         "conflict": conflict,
         "slot": conflicting_slot
     }
+
+#check môn học chưa đc sử dụng
+def check_unactive_course(course_id):
+    return dao.check_unactive_course(course_id)
+
 
