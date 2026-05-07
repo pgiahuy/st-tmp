@@ -184,7 +184,8 @@ def register_routes(app):
         reg_semester_tmp = dao.get_registration_semester()
         reg_semester = reg_semester_tmp
 
-        past_reg_semester = dao.get_recent_past_regis_semester()
+        if not reg_semester:
+            reg_semester = dao.get_recent_past_regis_semester()
 
         is_preview = False
 
@@ -196,7 +197,7 @@ def register_routes(app):
 
             if current_semester:
                 if date.today() < current_semester.start_date + timedelta(days=dl):
-                    error_msg = f"Ngoài thời gian đăng ký! {past_reg_semester.name} - {past_reg_semester.year} đã đóng vào {past_reg_semester.end_registration_date}"
+                    error_msg = f"Ngoài thời gian đăng ký! {reg_semester.name} - {reg_semester.year} đã đóng vào {reg_semester.end_registration_date}"
                 elif next_semester:
                     error_msg = f"Ngoài thời gian đăng ký! {next_semester.name} - {next_semester.year}  mở vào {next_semester.start_registration_date}"
 

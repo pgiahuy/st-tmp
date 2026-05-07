@@ -385,23 +385,31 @@ def get_courses_by_ids(ids):
         return []
     return db.session.query(Course).filter(Course.id.in_(ids)).all()
 
-def get_next_course_class_name(course_id, semester_id):
+
+def get_next_course_class_name(course_id, semester_id, course_class_id=None):
     course = db.session.get(Course, course_id)
     semester = get_semester_by_id(semester_id)
 
     max_index = (db.session.query(func.max(CourseClass.class_index))
                  .filter(
-                     CourseClass.course_id == course_id,
-                     CourseClass.semester_id == semester_id
-                 )
-                 .scalar())
+        CourseClass.course_id == course_id,
+        CourseClass.semester_id == semester_id
+    ).scalar()) or 0
 
-    next_index = (max_index or 0) + 1
-    print(f"codeeê{course}")
+    next_index = max_index + 1
+
+    if course_class_id:
+        course_class = get_course_class_by_id(course_class_id)
+
+        if course_class.semester_id == semester_id and course_class.course_id == course_id:
+            current_index = course_class.class_index
+            name = f"{course.course_code}-{semester.name}-L{current_index:02d}"
+            return name, current_index
+
     name = f"{course.course_code}-{semester.name}-L{next_index:02d}"
-
-
     return name, next_index
+
+
 
 def count_registered_students(course_class_id):
     return db.session.query(Registration).filter(

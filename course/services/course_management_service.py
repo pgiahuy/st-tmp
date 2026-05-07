@@ -52,7 +52,7 @@ def handle_course_class_change_service(user_role,semester_id, room_id, slot_ids,
             if slot else "Không xác định"
 
         raise BusinessException(
-            f"Trùng lịch: Phòng đã được sử dụng bởi lớp '{conflict.class_code}' vào {time_info}"
+            f"Trùng lịch: Phòng đã được sử dụng bởi lớp '{conflict.course_class.class_code}' vào {time_info}"
         )
 
     existing = dao.find_course_class_by_unique_keys(
