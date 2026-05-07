@@ -75,7 +75,7 @@
                         {{ s.slot.weekday.label }} - {{ s.slot.session }}<br>
                         {% endfor %}
                     </td>
-                    <td>{{ c.room.name }}</td>
+                    <td>{{ c.schedule_associations[0].room.name if c.schedule_associations[0].room else '—'  }}</td>
                     <td style="color: {% if c.max_students == c.current_size %}red{% endif %}">
                         <span style="color: {% if c.max_students == c.current_size %}red {%else%} blue{% endif %}">{{ c.current_size }}</span>
                         / {{ c.max_students }}

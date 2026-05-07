@@ -33,43 +33,54 @@
 
 
                 <div class="col-md-8">
-                    <h4>Lớp đăng ký trong học kỳ hiện tại</h4>
-                    {%if error_msg%}
-                        <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <div>
-                                {{error_msg}}
-                            </div>
-                        </div>
-                    {%else%}
-                        <p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
-                        {% if current_user.student and current_user.student.registrations %}
-                        <table class="table table-sm table-striped">
-                            <thead>
-                            <tr>
-                                <th>Mã lớp</th>
-                                <th>Môn học</th>
-                                <th>Tín chỉ</th>
-                                <th>Phòng</th>
+                    <div class="d-flex">
 
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for c in student_classes %}
-                            <tr>
-                                <td>{{ c.class_code }}</td>
-                                <td class="text-start">{{ c.course.course_name }}</td>
-                                <td class="text-center">{{ c.course.credits }}</td>
-
-                                <td>{{ c.room.name if c.room else '—' }}</td>
-
-                            </tr>
+                        <h4 class="me-1">Lớp đăng ký trong </h4>
+                        <select class="form-select form-select-sm w-auto" onchange="window.location.href='?semester_id=' + this.value">
+                            {% for s in semesters %}
+                            <option value="{{ s.id }}" {{ 'selected' if s.id|string == selected_semester_id|string }}>
+                                {{ s.name }} - {{ s.year }}
+                            </option>
                             {% endfor %}
-                            </tbody>
-                        </table>
-                        {% else %}
-                        <p>Chưa đăng ký lớp nào</p>
-                        {% endif %}
+                        </select>
+                    </div>
+
+                    {%if error_msg%}
+                    <div class="alert alert-warning d-flex align-items-center mt-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>
+                            {{error_msg}}
+                        </div>
+                    </div>
+                    {%else%}
+                    <p class="mb-3">Tổng số tín chỉ: <b>{{ sum_credits }} tín chỉ</b></p>
+                    {% if current_user.student and current_user.student.registrations %}
+                    <table class="table table-sm table-striped">
+                        <thead>
+                        <tr>
+                            <th>Mã lớp</th>
+                            <th>Môn học</th>
+                            <th>Tín chỉ</th>
+                            <th>Phòng</th>
+
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for c in student_classes %}
+                        <tr>
+                            <td>{{ c.class_code }}</td>
+                            <td class="text-start">{{ c.course.course_name }}</td>
+                            <td class="text-center">{{ c.course.credits }}</td>
+
+                            <td>{{ c.schedule_associations[0].room.name if c.schedule_associations[0].room else '—' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                    {% else %}
+                    <p>Chưa đăng ký lớp nào</p>
+                    {% endif %}
                     {%endif%}
                 </div>
             </div>

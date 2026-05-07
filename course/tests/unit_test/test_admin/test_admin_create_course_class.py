@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -5,7 +6,8 @@ from flask_login import current_user
 
 from course.admin import CourseClassAdmin
 from course.exceptions import BusinessException, PermissionDeniedException
-from course.models import CourseClass, ScheduleSlot, CourseClassSchedule, Semester, Room, Course, UserRole
+from course.models import CourseClass, ScheduleSlot, CourseClassScheduleRoom, Semester, Room, Course, UserRole, Day, \
+    Session
 from course.services import course_management_service
 from course.services.course_management_service import validate_course_class
 from course.tests.unit_test.test_base import test_app,test_session,test_client
@@ -71,7 +73,10 @@ def sample_course(test_session):
 class TestCreateCourseClassService:
 
     @pytest.fixture
-    def mock_data(self,sample_room):
+    def mock_data(self,sample_room,sample_course):
+        model = MagicMock(id=100)
+        model.class_index = 1
+        model.semester_id = 1
         return {
             "user_role": UserRole.ADMIN,
             "semester_id": 1,
@@ -79,18 +84,28 @@ class TestCreateCourseClassService:
             "slot_ids": [1, 2],
             "max_students": 30,
             "selected_slots_objects": [MagicMock(id=1), MagicMock(id=2)],
-            "model": MagicMock(id=100),
+            "model": model,
+            "course_id": sample_course[0].id,
             "class_id": None
         }
 
-    def test_max_students_invalid_lt(self, mock_data):
+    def test_max_students_invalid_lt(self, mock_data,monkeypatch,sample_semester):
+        monkeypatch.setattr(
+            "course.services.course_management_service.dao.get_semester_by_id",
+            lambda x: sample_semester
+        )
         mock_data["max_students"] = 0
+
         with pytest.raises(BusinessException, match="Số sinh viên tối thiểu là 1"):
             course_management_service.handle_course_class_change_service(**mock_data)
 
 
-    def test_max_students_invalid_gt(self, mock_data):
+    def test_max_students_invalid_gt(self, mock_data, monkeypatch,sample_semester):
         mock_data["max_students"] = 51
+        monkeypatch.setattr(
+            "course.services.course_management_service.dao.get_semester_by_id",
+            lambda x: sample_semester
+        )
         with pytest.raises(BusinessException, match="Số sinh viên tối đa là"):
             course_management_service.handle_course_class_change_service(**mock_data)
 
@@ -110,58 +125,59 @@ class TestCreateCourseClassService:
         with pytest.raises(BusinessException, match="Trùng lịch: Phòng đã được sử dụng"):
             course_management_service.handle_course_class_change_service(**mock_data)
 
-
     @patch('course.services.course_management_service.validate_course_class')
-    @patch('course.models.CourseClassSchedule')
+    @patch('course.services.course_management_service.CourseClassScheduleRoom')
     def test_success_flow(self, mock_schedule_class, mock_validate, mock_data):
         mock_validate.return_value = None
 
-        mock_schedule_class.side_effect = lambda course_class, slot: MagicMock()
+        mock_schedule_class.side_effect = lambda *args, **kwargs: MagicMock()
 
         result = course_management_service.handle_course_class_change_service(**mock_data)
 
         assert isinstance(result, list)
         assert len(result) == len(mock_data["selected_slots_objects"])
+
         mock_validate.assert_called_once()
+        assert mock_schedule_class.call_count == len(mock_data["selected_slots_objects"])
 
 
 def test_check_schedule_no_conflict(test_session, monkeypatch, sample_semester, sample_room, sample_course):
-    room_id = sample_room[0].id
-
     slot_1 = ScheduleSlot(
         id=1,
-        weekday="TUESDAY",
-        session="MORNING"
+        weekday=Day.TUESDAY,
+        session=Session.MORNING
     )
+
     slot_2 = ScheduleSlot(
         id=2,
-        weekday="MONDAY",
-        session="MORNING"
+        weekday=Day.MONDAY,
+        session=Session.MORNING
     )
 
     course_class = CourseClass(
         id=1,
-        room_id=room_id,
+        class_index=1,
         semester_id=sample_semester.id,
         active=True
     )
 
-    mapping = CourseClassSchedule(
+    mapping = CourseClassScheduleRoom(
         course_class=course_class,
-        slot=slot_1
+        slot=slot_1,
+        room=sample_room[0],
+        semester_id=sample_semester.id
     )
 
     test_session.add_all([slot_1,slot_2, course_class, mapping])
     test_session.commit()
 
-
-
     result = validate_course_class(
         semester_id=sample_semester.id,
-        room_id=room_id,
+        model_semester_id=None,
+        room_id=sample_room[0].id,
         slot_ids=[slot_2.id],
-        max_students= 50,
-        course_class_id= None
+        max_students=50,
+        course_class_id=None
     )
 
     assert result is None
@@ -169,79 +185,89 @@ def test_check_schedule_no_conflict(test_session, monkeypatch, sample_semester, 
 
 
 def test_check_schedule_conflict_no_result(test_session, monkeypatch, sample_semester, sample_room, sample_course):
-
-
-    room = sample_room[0]
-
+    slot_2 = ScheduleSlot(
+        id=2,
+        weekday=Day.MONDAY,
+        session=Session.MORNING
+    )
     result = validate_course_class(
         semester_id=sample_semester.id,
-        room_id=room.id,
-        slot_ids=[999],
-        max_students= 50,
-        course_class_id= None
+        model_semester_id=None,
+        room_id=sample_room[0].id,
+        slot_ids=[slot_2.id],
+        max_students=50,
+        course_class_id=None
     )
-
     assert result is None
 
 def test_check_schedule_room_not_found(test_session, monkeypatch, sample_semester, sample_room, sample_course):
-
-
+    slot_2 = ScheduleSlot(
+        id=2,
+        weekday=Day.MONDAY,
+        session=Session.MORNING
+    )
     room_id = 111
 
     with pytest.raises(ValueError) as e:
         validate_course_class(
             semester_id=sample_semester.id,
+            model_semester_id=None,
             room_id=room_id,
-            slot_ids=[999],
+            slot_ids=[slot_2.id],
             max_students=50,
             course_class_id=None
         )
     assert str(e.value) == "Room not found"
 
 def test_check_schedule_conflict_found(test_session, monkeypatch, sample_semester, sample_room):
-
-
     slot = ScheduleSlot(
         id=1,
         weekday="MONDAY",
         session="MORNING"
     )
-
     course_class = CourseClass(
         id=1,
-        room_id=sample_room[0].id,
+        class_index=1,
         semester_id=sample_semester.id,
         active=True
     )
 
-    mapping = CourseClassSchedule(
+    mapping = CourseClassScheduleRoom(
         course_class=course_class,
-        slot=slot
+        slot=slot,
+        room=sample_room[0],
+        semester_id=sample_semester.id
     )
 
     test_session.add_all([slot, course_class, mapping])
     test_session.commit()
 
     result = validate_course_class(
-        semester_id=sample_semester.id,
-        room_id=sample_room[0].id,
-        slot_ids=[1],
-        max_students=50,
-        course_class_id=None
-    )
+            semester_id=sample_semester.id,
+            model_semester_id=None,
+            room_id=sample_room[0].id,
+            slot_ids=[slot.id],
+            max_students=50,
+            course_class_id=None
+        )
     assert result is not None
 
     conflict = result["conflict"]
     slot = result["slot"]
 
     assert conflict.room_id == sample_room[0].id
-    assert any(a.slot_id == slot.id for a in conflict.schedule_associations)
+    assert conflict.slot_id == slot.id
 
 def test_fail_max_slots(test_session, monkeypatch, sample_semester, sample_room):
     with pytest.raises(BusinessException) as e:
+
         validate_course_class(
-            semester_id=sample_semester.id,room_id=sample_room[0].id,
-            slot_ids=[1],max_students=51,course_class_id=None
+            semester_id=sample_semester.id,
+            model_semester_id=None,
+            room_id=sample_room[0].id,
+            slot_ids=[1],
+            max_students=51,
+            course_class_id=None
         )
 
     assert "Số sinh viên tối đa là" in str(e.value)
@@ -250,8 +276,12 @@ def test_fail_max_slots(test_session, monkeypatch, sample_semester, sample_room)
 def test_fail_max_room_capacity(test_session, monkeypatch, sample_semester, sample_room):
     with pytest.raises(BusinessException) as e:
         validate_course_class(
-            semester_id=sample_semester.id,room_id=sample_room[1].id,
-            slot_ids=[1],max_students=44,course_class_id=None
+            semester_id=sample_semester.id,
+            model_semester_id=None,
+            room_id=sample_room[1].id,
+            slot_ids=[1],
+            max_students=44,
+            course_class_id=None
         )
 
     assert "Số sinh viên tối đa là" in str(e.value)

@@ -2,9 +2,9 @@ from flask import request, jsonify
 from flask_login import login_required, current_user
 
 import course.services.registration_service
-from course import dao, app
+from course import dao, app, db
 from course.exceptions import BusinessException
-from course.models import UserRole
+from course.models import UserRole, CourseClassScheduleRoom, Room
 from course.services import registration_service
 
 from course.services.system_cancel_service import auto_cancel_job
@@ -86,9 +86,13 @@ def register_api(app):
             }), 401
         mssv = current_user.username
         reg_semester = dao.get_registration_semester()
+        if not reg_semester:
+            reg_semester = dao.get_recent_past_regis_semester()
         current_semester = dao.get_current_semester()
 
         semester = reg_semester or current_semester
+        print("===")
+        print(reg_semester)
 
         semester_id = semester.id
 
@@ -105,6 +109,49 @@ def register_api(app):
             }), 200
         except BusinessException as e:
             return jsonify({"success": False, "message": str(e)}), 400
+
+    @app.route("/api/admin/available-rooms")
+    def available_rooms():
+        slot_ids = request.args.get("slot_ids")
+        semester_id = request.args.get("semester_id")
+
+        if not slot_ids or not semester_id:
+            return jsonify([])
+
+        slot_ids = [int(x) for x in slot_ids.split(",")]
+        semester_id = int(semester_id)
+
+        busy_room_ids = (
+            db.session.query(CourseClassScheduleRoom.room_id)
+            .filter(
+                CourseClassScheduleRoom.slot_id.in_(slot_ids),
+                CourseClassScheduleRoom.semester_id == semester_id
+            )
+            .distinct()
+        )
+
+        rooms = Room.query.filter(~Room.id.in_(busy_room_ids)).all()
+
+        return jsonify([
+            {"id": r.id, "name": r.name}
+            for r in rooms
+        ])
+
+    @app.route("/api/secure/registered-on-semester")
+    def secure_registered_on_semester():
+        semester_id = request.args.get("semester_id")
+        if not semester_id:
+            return 404
+
+        student_id = dao.get_student_id_by_mssv(current_user.username)
+
+        student_classes = dao.get_course_classes_student_registered(semester_id, student_id)
+
+        return jsonify({
+            "success": True,
+            "student_classes": student_classes
+        })
+
 #
 # @app.route('/api/admin/auto-cancel', methods=['POST'])
 # def api_auto_cancel():

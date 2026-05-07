@@ -59,8 +59,8 @@ def sample_course(test_session):
 def sample_course_class(test_session, sample_course, sample_semester):
     course_class_1 = CourseClass(
         class_code="KTLT",
+        class_index=1,
         course_id=sample_course[0].id,
-        room_id=11,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=True

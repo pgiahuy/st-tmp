@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 
 from course import db
 from course.models import User, Student, CourseClass, Registration, Semester, Course, CoursePrerequisite, \
-    CourseClassSchedule, SystemConfig, ScheduleSlot, Room, RegistrationStatus, ConfigEnum
+    CourseClassScheduleRoom, SystemConfig, ScheduleSlot, Room, RegistrationStatus, ConfigEnum
 
 
 def hash_password(password = None):
@@ -285,35 +285,26 @@ def change_password(user_id, new_password):
 def get_room_by_id(room_id):
     return db.session.get(Room,room_id)
 
-def check_schedule_conflict(  semester_id, room_id, slot_ids, current_class_id=None):
 
-    query = db.session.query(CourseClass).join(
-        CourseClassSchedule,
-        CourseClass.id == CourseClassSchedule.course_class_id
-    ).join(
-        ScheduleSlot,
-        CourseClassSchedule.slot_id == ScheduleSlot.id
+# check lại
+def check_schedule_conflict(semester_id, room_id, slot_ids, current_class_id=None):
+    query = db.session.query(CourseClassScheduleRoom).join(
+        CourseClass,
+        CourseClass.id == CourseClassScheduleRoom.course_class_id
     ).filter(
-        CourseClass.room_id == room_id,
-        CourseClass.semester_id == semester_id,
+        CourseClassScheduleRoom.room_id == room_id,
+        CourseClassScheduleRoom.semester_id == semester_id,
         CourseClass.active == True
     )
 
-    if current_class_id: # by_pass khi update
-        query = query.filter(CourseClass.id != current_class_id)
+    if current_class_id:
+        query = query.filter(CourseClassScheduleRoom.course_class_id != current_class_id)
 
-    new_slots = db.session.query(ScheduleSlot).filter(ScheduleSlot.id.in_(slot_ids)).all()
+    conflict = query.filter(
+        CourseClassScheduleRoom.slot_id.in_(slot_ids)
+    ).first()
 
-    for ns in new_slots:
-        conflict = query.filter(
-            ScheduleSlot.weekday == ns.weekday,
-            ScheduleSlot.session == ns.session
-        ).first()
-
-        if conflict:
-            return conflict
-
-    return None
+    return conflict
 
 
 def count_course_registrations( course_class_id):
@@ -379,25 +370,60 @@ def get_recent_past_semester():
         Semester.end_date < now
     ).order_by(Semester.end_date.desc()).first()
 
+def get_recent_past_regis_semester():
+    now = date.today()
+
+    return Semester.query.filter(
+        Semester.end_registration_date < now
+    ).order_by(Semester.end_registration_date.desc()).first()
+
+def get_semesters():
+    return db.session.query(Semester).all()
 
 def get_courses_by_ids(ids):
     if not ids:
         return []
     return db.session.query(Course).filter(Course.id.in_(ids)).all()
 
-def get_next_course_class_name(course_id, semester_id):
+
+def get_next_course_class_name(course_id, semester_id, course_class_id=None):
     course = db.session.get(Course, course_id)
     semester = get_semester_by_id(semester_id)
 
     max_index = (db.session.query(func.max(CourseClass.class_index))
                  .filter(
-                     CourseClass.course_id == course_id,
-                     CourseClass.semester_id == semester_id
-                 )
-                 .scalar())
+        CourseClass.course_id == course_id,
+        CourseClass.semester_id == semester_id
+    ).scalar()) or 0
 
-    next_index = (max_index or 0) + 1
+    next_index = max_index + 1
+
+    if course_class_id:
+        course_class = get_course_class_by_id(course_class_id)
+
+        if course_class.semester_id == semester_id and course_class.course_id == course_id:
+            current_index = course_class.class_index
+            name = f"{course.course_code}-{semester.name}-L{current_index:02d}"
+            return name, current_index
 
     name = f"{course.course_code}-{semester.name}-L{next_index:02d}"
-
     return name, next_index
+
+
+
+def count_registered_students(course_class_id):
+    return db.session.query(Registration).filter(
+        Registration.course_class_id == course_class_id
+    ).count()
+
+def find_course_class_by_unique_keys(course_id, semester_id, class_index, exclude_id=None):
+    query = db.session.query(CourseClass).filter(
+        CourseClass.course_id == course_id,
+        CourseClass.semester_id == semester_id,
+        CourseClass.class_index == class_index
+    )
+
+    if exclude_id:
+        query = query.filter(CourseClass.id != exclude_id)
+
+    return query.first()

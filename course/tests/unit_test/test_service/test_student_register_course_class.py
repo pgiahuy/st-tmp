@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, date
 
 import pytest
 from course.dao import hash_password
@@ -75,8 +75,8 @@ def sample_course_prerequisite(test_session, sample_course):
 def sample_course_class(test_session, sample_course, sample_room, sample_semester):
     course_class_1 = CourseClass(
         class_code="KTLT",
+        class_index=1,
         course_id=sample_course[0].id,
-        room_id=sample_room[0].id,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=True
@@ -93,10 +93,10 @@ def sample_course_class(test_session, sample_course, sample_room, sample_semeste
 def sample_course_class_full_slot(test_session, sample_course, sample_room, sample_semester):
     course_class_1 = CourseClass(
         class_code="CNPM",
+        class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
-        max_students=0,
+        max_students=1,
         active=True
     )
 
@@ -109,8 +109,8 @@ def sample_course_class_full_slot(test_session, sample_course, sample_room, samp
 def sample_course_class_need_prerequisite(test_session, sample_course, sample_room, sample_semester):
     course_class_1 = CourseClass(
         class_code="CNPM",
+        class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[1].id,
         max_students=40,
         active=True
@@ -135,8 +135,8 @@ def sample_schedule_slots(test_session):
 def sample_course_class_conflict_1(test_session, sample_course, sample_room, sample_semester):
     course_class_1 = CourseClass(
         class_code="KTLT",
+        class_index=1,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
         max_students=50,
         active=True
@@ -150,8 +150,8 @@ def sample_course_class_conflict_1(test_session, sample_course, sample_room, sam
 def sample_course_class_conflict_2(test_session, sample_course, sample_room, sample_semester):
     course_class_1 = CourseClass(
         class_code="CNPM",
+        class_index=2,
         course_id=sample_course[1].id,
-        room_id=sample_room[1].id,
         semester_id=sample_semester[0].id,
         max_students=50,
         active=True
@@ -162,20 +162,37 @@ def sample_course_class_conflict_2(test_session, sample_course, sample_room, sam
     return course_class_1
 
 @pytest.fixture
-def sample_course_class_schedule(test_session, sample_course_class_conflict_1, sample_course_class_conflict_2, sample_schedule_slots):
-    assoc1 = CourseClassSchedule(
+def sample_course_class_schedule(test_session,sample_semester,sample_room, sample_course_class_conflict_1, sample_course_class_conflict_2, sample_schedule_slots):
+    assoc1 = CourseClassScheduleRoom(
         course_class_id=sample_course_class_conflict_1.id,
-        slot_id=sample_schedule_slots.id
+        slot_id=sample_schedule_slots.id,
+        room=sample_room[0],
+        semester_id=sample_semester[0].id
     )
-    assoc2 = CourseClassSchedule(
+
+    assoc2 = CourseClassScheduleRoom(
         course_class_id=sample_course_class_conflict_2.id,
-        slot_id=sample_schedule_slots.id
+        slot_id=sample_schedule_slots.id,
+        room=sample_room[0],
+        semester_id=sample_semester[0].id
     )
     test_session.add_all([assoc1, assoc2])
     test_session.commit()
 
     return [assoc1, assoc2]
 # =========
+
+@pytest.fixture
+def sample_regis_for_full_slot(test_session,sample_student, sample_course_class_full_slot, sample_semester):
+    reg = Registration(
+        student_id = sample_student.id,
+        course_class_id=sample_course_class_full_slot.id,
+        semester_id=sample_semester[1].id,
+
+    )
+    test_session.add(reg)
+    test_session.commit()
+    return reg
 
 def test_register_success(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
 
@@ -259,14 +276,29 @@ def test_register_fail_min_credit(test_session, monkeypatch, sample_semester, sa
 
 
 
-def test_register_fail_full_slot(test_session, monkeypatch, sample_semester, sample_student, sample_course_class_full_slot):
+def test_register_fail_full_slot(test_session, monkeypatch, sample_semester, sample_student, sample_course_class_full_slot,sample_regis_for_full_slot):
 
     with pytest.raises(BusinessException) as e:
         register_course(sample_semester[0].id, sample_student.id, sample_course_class_full_slot.id)
     assert "đã đầy" in str(e.value)
 
-def test_register_conflict(test_session, monkeypatch, sample_semester, sample_student,sample_course_class_schedule,
-                           sample_course_class_conflict_1, sample_course_class_conflict_2):
+def test_register_conflict(test_session, monkeypatch, sample_semester, sample_student,
+                           sample_course_class_conflict_1, sample_course_class_conflict_2,sample_schedule_slots,sample_room):
+    assoc1 = CourseClassScheduleRoom(
+        course_class_id=sample_course_class_conflict_1.id,
+        slot_id=sample_schedule_slots.id,
+        room_id=sample_room[0].id,
+        semester_id=sample_semester[0].id
+    )
+
+    assoc2 = CourseClassScheduleRoom(
+        course_class_id=sample_course_class_conflict_2.id,
+        slot_id=sample_schedule_slots.id,
+        room_id=sample_room[1].id,
+        semester_id=sample_semester[0].id
+    )
+    test_session.add_all([assoc1, assoc2])
+    test_session.commit()
 
     register_course(sample_semester[0].id, sample_student.id, sample_course_class_conflict_1.id)
 
@@ -288,8 +320,8 @@ def test_register_fail_student_not_found(sample_course_class, sample_semester):
 def test_register_fail_inactive_class(test_session,monkeypatch, sample_course, sample_room, sample_semester, sample_student):
     cls = CourseClass(
         class_code="WEB",
+        class_index=1,
         course_id=sample_course[0].id,
-        room_id=sample_room[0].id,
         semester_id=sample_semester[0].id,
         max_students=40,
         active=False
@@ -306,7 +338,7 @@ def test_register_fail_inactive_class(test_session,monkeypatch, sample_course, s
 def test_register_after_deadline(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
     semester = sample_course_class.semester
 
-    semester.end_registration_date = datetime.now() - timedelta(days=1)
+    semester.end_registration_date = date.today() - timedelta(days=1)
     test_session.commit()
 
     with pytest.raises(BusinessException) as e:
@@ -317,7 +349,7 @@ def test_register_after_deadline(test_session, monkeypatch, sample_semester, sam
 def test_register_before_deadline(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
     semester = sample_course_class.semester
 
-    semester.end_registration_date = datetime.now() + timedelta(days=1)
+    semester.end_registration_date = date.today() + timedelta(days=1)
     test_session.commit()
     result = register_course(sample_semester[0].id,sample_student.id,sample_course_class.id)
     assert result is True
@@ -325,7 +357,7 @@ def test_register_before_deadline(test_session, monkeypatch, sample_semester, sa
 def test_register_at_deadline(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
     semester = sample_course_class.semester
 
-    semester.end_registration_date = datetime.now()
+    semester.end_registration_date = date.today()
     test_session.commit()
     result = register_course(sample_semester[0].id,sample_student.id,sample_course_class.id)
     assert result is True
@@ -334,7 +366,7 @@ def test_register_at_deadline(test_session, monkeypatch, sample_semester, sample
 def test_register_before_open(test_session, monkeypatch, sample_semester, sample_student, sample_course_class):
     semester = sample_course_class.semester
 
-    semester.start_registration_date = datetime.now() + timedelta(days=1)
+    semester.start_registration_date = date.today() + timedelta(days=1)
     test_session.commit()
 
     with pytest.raises(BusinessException) as e:

@@ -101,12 +101,13 @@ def register_routes(app):
     @app.route('/userinfo')
     @login_required
     def my_profile():
+
         reg_semester = dao.get_registration_semester()
         current_semester = dao.get_current_semester()
 
-        semester_for_view = current_semester or reg_semester
+        semester_for_view = reg_semester or current_semester
         if not semester_for_view:
-            semester_for_view = dao.get_recent_past_semester()
+            semester_for_view = dao.get_recent_past_regis_semester()
 
 
         student = dao.get_student_by_mssv(current_user.username)
@@ -115,13 +116,22 @@ def register_routes(app):
             error_msg = "Danh sách môn trống!"
             return render_template('profile.html',
                                    student=student,
+
                                    error_msg = error_msg)
-
+        filter_semester_id = request.args.get('semester_id')
         student_classes = dao.get_course_classes_student_registered(semester_for_view.id, student.id)
+        selected_semester_id =None
+        if filter_semester_id:
+            selected_semester_id = filter_semester_id
+            student_classes = dao.get_course_classes_student_registered(filter_semester_id, student.id)
 
+        semesters = dao.get_semesters()
         sum_credits = sum(c.course.credits for c in student_classes)
-
+        semester_name = f"{semester_for_view.name} - {semester_for_view.year}"
         return render_template('profile.html',
+                               semesters=semesters,
+                               selected_semester_id = selected_semester_id,
+                               semester_name = semester_name,
                                sum_credits=sum_credits,
                                student=student,
                                student_classes=student_classes)
@@ -173,6 +183,10 @@ def register_routes(app):
         error_msg = None
         reg_semester_tmp = dao.get_registration_semester()
         reg_semester = reg_semester_tmp
+
+        if not reg_semester:
+            reg_semester = dao.get_recent_past_regis_semester()
+
         is_preview = False
 
         if not reg_semester_tmp:
@@ -183,7 +197,7 @@ def register_routes(app):
 
             if current_semester:
                 if date.today() < current_semester.start_date + timedelta(days=dl):
-                    error_msg = f"Ngoài thời gian đăng ký! {current_semester.name} - {current_semester.year} đã đóng vào {current_semester.end_registration_date}"
+                    error_msg = f"Ngoài thời gian đăng ký! {reg_semester.name} - {reg_semester.year} đã đóng vào {reg_semester.end_registration_date}"
                 elif next_semester:
                     error_msg = f"Ngoài thời gian đăng ký! {next_semester.name} - {next_semester.year}  mở vào {next_semester.start_registration_date}"
 
