@@ -86,9 +86,13 @@ def register_api(app):
             }), 401
         mssv = current_user.username
         reg_semester = dao.get_registration_semester()
+        if not reg_semester:
+            reg_semester = dao.get_recent_past_regis_semester()
         current_semester = dao.get_current_semester()
 
         semester = reg_semester or current_semester
+        print("===")
+        print(reg_semester)
 
         semester_id = semester.id
 

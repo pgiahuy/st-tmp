@@ -197,7 +197,7 @@ def register_routes(app):
 
             if current_semester:
                 if date.today() < current_semester.start_date + timedelta(days=dl):
-                    error_msg = f"Ngoài thời gian đăng ký! {current_semester.name} - {current_semester.year} đã đóng vào {current_semester.end_registration_date}"
+                    error_msg = f"Ngoài thời gian đăng ký! {reg_semester.name} - {reg_semester.year} đã đóng vào {reg_semester.end_registration_date}"
                 elif next_semester:
                     error_msg = f"Ngoài thời gian đăng ký! {next_semester.name} - {next_semester.year}  mở vào {next_semester.start_registration_date}"
 

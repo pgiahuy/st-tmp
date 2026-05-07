@@ -129,6 +129,7 @@ class CourseClassAdmin(MyAdminModelView):
         'max_students',
         'schedule_associations',
         'semester',
+        'room'
 
     )
 
@@ -139,6 +140,7 @@ class CourseClassAdmin(MyAdminModelView):
         'max_students': 'Sĩ số tối đa',
         'schedule_associations': 'Lịch học',
         'is_midterm_tested': 'Đã thi giữa kỳ',
+        'room': 'Phòng học'
     }
 
 
@@ -168,7 +170,9 @@ class CourseClassAdmin(MyAdminModelView):
 
         'course': lambda v, c, m, p: f"{m.course.course_code} - {m.course.course_name}" if m.course else "N/A",
 
-        'max_students': _student_count_formatter
+        'max_students': _student_count_formatter,
+
+        'room': lambda v, c, m, p: f"{m.schedule_associations[0].room.name}" if m.schedule_associations else "N/A",
     }
 
 
@@ -192,22 +196,17 @@ class CourseClassAdmin(MyAdminModelView):
             # 'query_factory': lambda: Semester.query.filter(
             #     Semester.end_date >= date.today()
             # ).all()
-        },
-        'class_code': {
-            'validators': [DataRequired(message="Vui lòng nhập mã lớp")]
         }
+        # ,
+        # 'class_code': {
+        #     'validators': [DataRequired(message="Vui lòng nhập mã lớp")]
+        # }
 
     }
 
     form_excluded_columns = ('schedule_associations', 'registrations', 'created_date', 'active','class_code','class_index')
 
-    def on_form_prefill(self, form, id):
-        model = self.get_one(id)
 
-        if model and model.schedule_associations:
-            form.slots_picker.data = [
-                sa.slot for sa in model.schedule_associations
-            ]
 
     form_extra_fields = {
         'slots_picker': QuerySelectMultipleField(
@@ -223,6 +222,22 @@ class CourseClassAdmin(MyAdminModelView):
         allow_blank=False
     )
     }
+
+
+    def on_form_prefill(self, form, id):
+        model = self.get_one(id)
+
+        if model and model.schedule_associations:
+            form.slots_picker.data = [
+                sa.slot for sa in model.schedule_associations
+            ]
+
+            form.room.data = model.schedule_associations[0].room
+
+
+
+
+
 
     extra_js = [
         '/static/js/admin_create_course_class.js',
@@ -258,8 +273,21 @@ class CourseClassAdmin(MyAdminModelView):
 
                 # db.session.add(model)
                 # db.session.flush()
+            else:
+                with db.session.no_autoflush:
+                    name, index = dao.get_next_course_class_name(
+                        course_id=form.course.data.id,
+                        semester_id=form.semester.data.id,
+                        course_class_id = class_id
+                    )
+
+                model.class_code = name
+                model.class_index = index
 
             print(form._fields.keys())
+
+
+
 
             with db.session.no_autoflush:
                 result = course_management_service.handle_course_class_change_service(
@@ -321,7 +349,8 @@ class RegistrationAdmin(AdminAccessMixin, ModelView):
     }
     column_formatters = {
         'student': lambda v, c, m, p: f"{m.student.mssv}",
-        'course_class': lambda v, c, m, p: f"{m.course_class.class_code}",
+        'course_class': lambda v, c, m, p: m.course_class.class_code if m.course_class else ""
+
     }
     column_list = ['pre_status', 'status', 'updated_at', 'registered_at', 'student', 'course_class', 'semester']
 
