@@ -257,7 +257,12 @@ class CourseClassAdmin(MyAdminModelView):
     column_searchable_list = ['class_code']
     column_filters = ['course.course_name', 'semester']
 
+
+
     def on_model_change(self, form, model, is_created):
+        if not is_created:
+            if not course_management_service.check_unactive_course_class(model.id):
+                raise ValidationError(f"Lỗi: Lớp học '{model.class_code}' đã có sinh viên đăng ký, không thể sửa!")
 
         room = form.room.data
         selected_slots = form.slots_picker.data

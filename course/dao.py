@@ -439,3 +439,16 @@ def check_unactive_course(course_id):
         return False
 
     return True
+
+
+
+def check_course_class_have_not_registration(course_class_id):
+
+    regis = Registration.query.filter(
+        Registration.course_class_id == course_class_id, Registration.status == RegistrationStatus.REGISTERED
+    ).first()
+
+    if regis:
+        return False
+
+    return True
