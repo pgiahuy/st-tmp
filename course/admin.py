@@ -4,6 +4,7 @@ import markupsafe
 from click import Choice
 from flask import url_for, request, abort, session, flash
 from flask_admin import Admin, AdminIndexView, expose
+from flask_admin._types import T_ORM_MODEL
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.contrib.sqla.fields import InlineModelFormList, QuerySelectMultipleField, QuerySelectField
 from flask_admin.form import DatePickerWidget
@@ -120,6 +121,15 @@ class CourseAdmin(AdminAccessMixin, ModelView):
 
 
     form_excluded_columns = ['classes', 'created_date','required_for']
+
+    def on_model_change(self, form, model, is_created):
+        if not is_created:
+            if not course_management_service.check_unactive_course(model.id):
+                raise ValidationError(f"Lỗi: Môn học '{model.course_code} - {model.course_name}' đã có sinh viên đăng ký, không thể sửa!")
+
+    def on_model_delete(self, model):
+        if not course_management_service.check_unactive_course(model.id):
+            raise ValidationError(f"Lỗi: Môn học '{model.course_code} - {model.course_name}' đã có sinh viên đăng ký, không thể xóa!")
 
 
 class CourseClassAdmin(MyAdminModelView):
@@ -247,7 +257,12 @@ class CourseClassAdmin(MyAdminModelView):
     column_searchable_list = ['class_code']
     column_filters = ['course.course_name', 'semester']
 
+
+
     def on_model_change(self, form, model, is_created):
+        if not is_created:
+            if not course_management_service.check_unactive_course_class(model.id):
+                raise ValidationError(f"Lỗi: Lớp học '{model.class_code}' đã có sinh viên đăng ký, không thể sửa!")
 
         room = form.room.data
         selected_slots = form.slots_picker.data
